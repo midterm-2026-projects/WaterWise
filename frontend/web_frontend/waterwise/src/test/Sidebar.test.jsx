@@ -5,10 +5,12 @@ import Sidebar from "../components/Sidebar";
 describe("Sidebar Testing", () => {
   const items = [
     "Dashboard",
-    "Residents",
-    "Meter Reading",
+    "consumer management",
     "Billing",
     "Analytics",
+    "Payments",
+    "Reports",
+    "Announcements",
   ];
 
   it.each(items)(
