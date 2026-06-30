@@ -2,6 +2,10 @@ import Sidebar from "./components/Sidebar";
 import AnalyticsTitle from "./components/AnalyticsTitle";
 import KpiCard from "./components/KpiCard";
 import { kpiData } from "./data/analyticsData";
+<<<<<<< HEAD
+=======
+import RolesTable from "./components/RolesTable";
+>>>>>>> bac738c15348469c511fd4e89fc69a807185e45b
 
 function App() {
   const sidebarItems = [
@@ -25,6 +29,10 @@ function App() {
           title="Analytics Dashboard"
           subtitle="Monitor water consumption and forecasting insights"
         />
+<<<<<<< HEAD
+=======
+        <RolesTable/>
+>>>>>>> bac738c15348469c511fd4e89fc69a807185e45b
 
         <div
           style={{
