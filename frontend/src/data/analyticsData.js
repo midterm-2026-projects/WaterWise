@@ -151,3 +151,25 @@ export const purokConsumptionData = {
     ],
   },
 };
+
+// Latest Historical Monthly Comparison (May)
+
+export const monthlyComparisonData = [
+  { purok: "Purok 1", consumption: 5010 },
+  { purok: "Purok 2", consumption: 4550 },
+  { purok: "Purok 3", consumption: 5350 },
+  { purok: "Purok 4", consumption: 4250 },
+  { purok: "Purok 5", consumption: 4790 },
+  { purok: "Purok 6", consumption: 4580 },
+];
+
+// Latest Historical Yearly Comparison (2025)
+
+export const yearlyComparisonData = [
+  { purok: "Purok 1", consumption: 59800 },
+  { purok: "Purok 2", consumption: 54800 },
+  { purok: "Purok 3", consumption: 64900 },
+  { purok: "Purok 4", consumption: 49500 },
+  { purok: "Purok 5", consumption: 56300 },
+  { purok: "Purok 6", consumption: 52600 },
+];
