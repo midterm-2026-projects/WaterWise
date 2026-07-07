@@ -8,7 +8,6 @@ export function insertEvent(event) {
     ...event,
   };
 
-
   mockEventData.push(newEvent);
 
   return newEvent;
@@ -17,18 +16,34 @@ export function insertEvent(event) {
 
 
 export function getEvents() {
-
   return mockEventData;
+}
+
+
+
+// SEARCH EVENT
+export function findEventById(id) {
+
+  return mockEventData.find(
+    (event) =>
+      event.id === id
+  );
 
 }
 
 
 
-export function updateEvent(id, updatedEvent) {
+// UPDATE EVENT
+export function updateEvent(
+  id,
+  updatedEvent
+) {
 
-  const index = mockEventData.findIndex(
-    (event) => event.id === id
-  );
+  const index =
+    mockEventData.findIndex(
+      (event) =>
+        event.id === id
+    );
 
 
   if (index === -1) {
@@ -43,16 +58,18 @@ export function updateEvent(id, updatedEvent) {
 
 
   return mockEventData[index];
-
 }
 
 
 
+// DELETE EVENT
 export function deleteEvent(id) {
 
-  const index = mockEventData.findIndex(
-    (event) => event.id === id
-  );
+  const index =
+    mockEventData.findIndex(
+      (event) =>
+        event.id === id
+    );
 
 
   if (index === -1) {
@@ -60,9 +77,7 @@ export function deleteEvent(id) {
   }
 
 
-  mockEventData.splice(index, 1);
-
+  mockEventData.splice(index,1);
 
   return true;
-
 }

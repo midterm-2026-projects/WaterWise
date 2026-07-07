@@ -1,67 +1,153 @@
 import {
+
   insertAnnouncement,
   getAnnouncements,
+  findAnnouncementById,
   updateAnnouncement,
   deleteAnnouncement,
+
 } from "../models/AnnouncementModel.js";
 
 
-// CREATE ANNOUNCEMENT
+import {
+  validateAnnouncement,
+} from "../validation/AnnouncementValidation.js";
+
+
+
+// CREATE
 export function createAnnouncement(
   announcementData
 ) {
-  return insertAnnouncement(
-    announcementData
-  );
-}
 
 
-// READ ANNOUNCEMENTS
-export function readAnnouncements() {
-  return getAnnouncements();
-}
-
-
-// UPDATE ANNOUNCEMENT
-export function editAnnouncement(
-  id,
-  announcementData
-) {
-  const updatedAnnouncement =
-    updateAnnouncement(
-      id,
+  const validation =
+    validateAnnouncement(
       announcementData
     );
 
 
-  if (!updatedAnnouncement) {
+  if (!validation.isValid) {
+
     throw new Error(
-      "Announcement not found."
+      JSON.stringify(
+        validation.errors
+      )
     );
+
   }
 
 
-  return updatedAnnouncement;
+  return insertAnnouncement(
+    announcementData
+  );
+
 }
 
 
-// DELETE ANNOUNCEMENT
-export function removeAnnouncement(
+
+
+// READ ALL
+export function readAnnouncements() {
+
+  return getAnnouncements();
+
+}
+
+
+
+
+// SEARCH
+export function searchAnnouncement(
   id
 ) {
-  const deleted =
-    deleteAnnouncement(id);
 
 
-  if (!deleted) {
+  const announcement =
+    findAnnouncementById(id);
+
+
+
+  if (!announcement) {
+
     throw new Error(
       "Announcement not found."
     );
+
   }
 
 
+  return announcement;
+
+}
+
+
+
+
+
+// UPDATE
+export function editAnnouncement(
+  id,
+  announcementData
+) {
+
+
+  // Check existing record
+
+  searchAnnouncement(id);
+
+
+
+  const validation =
+    validateAnnouncement(
+      announcementData
+    );
+
+
+  if (!validation.isValid) {
+
+    throw new Error(
+      JSON.stringify(
+        validation.errors
+      )
+    );
+
+  }
+
+
+
+  return updateAnnouncement(
+    id,
+    announcementData
+  );
+
+}
+
+
+
+
+
+// DELETE
+export function removeAnnouncement(
+  id
+) {
+
+
+  // Check existing record
+
+  searchAnnouncement(id);
+
+
+
+  deleteAnnouncement(id);
+
+
+
   return {
+
     message:
       "Announcement deleted successfully.",
+
   };
+
 }

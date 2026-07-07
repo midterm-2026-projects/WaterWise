@@ -10,19 +10,30 @@ import {
 vi.mock("../models/EventModel.js", () => ({
   insertEvent: vi.fn(),
   getEvents: vi.fn(),
+  findEventById: vi.fn(),
   updateEvent: vi.fn(),
   deleteEvent: vi.fn(),
 }));
 
 
+vi.mock("../validation/EventValidation.js", () => ({
+  validateEvent: vi.fn(),
+}));
+
+
 import * as eventModel from "../models/EventModel.js";
+
+import * as eventValidation from "../validation/EventValidation.js";
+
 
 import {
   createEvent,
   readEvents,
+  searchEvent,
   editEvent,
   removeEvent,
 } from "../services/EventService.js";
+
 
 
 describe("Event Service", () => {
@@ -55,31 +66,51 @@ describe("Event Service", () => {
       };
 
 
-      eventModel.insertEvent.mockReturnValue(
-        mockEvent
-      );
+      eventValidation
+        .validateEvent
+        .mockReturnValue({
+          isValid: true,
+          errors: {},
+        });
+
+
+      eventModel
+        .insertEvent
+        .mockReturnValue(
+          mockEvent
+        );
 
 
       // Act
-      const result = createEvent(
-        mockEvent
-      );
+      const result =
+        createEvent(mockEvent);
+
 
 
       // Assert
+      expect(result)
+        .toEqual(mockEvent);
+
+
       expect(
-        result
-      ).toEqual(mockEvent);
+        eventValidation.validateEvent
+      )
+      .toHaveBeenCalledWith(
+        mockEvent
+      );
 
 
       expect(
         eventModel.insertEvent
-      ).toHaveBeenCalledOnce();
+      )
+      .toHaveBeenCalledOnce();
+
 
     });
 
 
   });
+
 
 
 
@@ -93,18 +124,24 @@ describe("Event Service", () => {
       const mockEvents = [
         {
           id: 1,
-          title: "Water System Maintenance",
+          title:
+            "Water System Maintenance",
         },
       ];
 
 
-      eventModel.getEvents.mockReturnValue(
-        mockEvents
-      );
+      eventModel
+        .getEvents
+        .mockReturnValue(
+          mockEvents
+        );
+
 
 
       // Act
-      const result = readEvents();
+      const result =
+        readEvents();
+
 
 
       // Assert
@@ -114,13 +151,85 @@ describe("Event Service", () => {
 
       expect(
         eventModel.getEvents
-      ).toHaveBeenCalledOnce();
+      )
+      .toHaveBeenCalledOnce();
 
 
     });
 
 
   });
+
+
+
+
+  describe("Search Event", () => {
+
+
+    it("should return event when id exists", () => {
+
+
+      // Arrange
+      const mockEvent = {
+        id: 1,
+        title:
+          "Barangay Assembly",
+      };
+
+
+      eventModel
+        .findEventById
+        .mockReturnValue(
+          mockEvent
+        );
+
+
+      // Act
+      const result =
+        searchEvent(1);
+
+
+
+      // Assert
+      expect(result)
+        .toEqual(mockEvent);
+
+
+      expect(
+        eventModel.findEventById
+      )
+      .toHaveBeenCalledWith(1);
+
+
+    });
+
+
+
+    it("should throw error when event does not exist", () => {
+
+
+      // Arrange
+      eventModel
+        .findEventById
+        .mockReturnValue(
+          null
+        );
+
+
+      // Act + Assert
+      expect(() =>
+        searchEvent(999)
+      )
+      .toThrow(
+        "Event not found."
+      );
+
+
+    });
+
+
+  });
+
 
 
 
@@ -133,30 +242,76 @@ describe("Event Service", () => {
       // Arrange
       const updatedEvent = {
         id: 1,
-        title: "Updated Event",
+        title:
+          "Updated Event",
+        description:
+          "Updated description",
+        date:
+          "2026-07-20",
+        time:
+          "10:00 AM",
+        location:
+          "Barangay Hall",
+        tags:
+          [
+            "Community"
+          ],
+        status:
+          "Upcoming",
       };
 
 
-      eventModel.updateEvent.mockReturnValue(
-        updatedEvent
-      );
+
+      eventModel
+        .findEventById
+        .mockReturnValue(
+          updatedEvent
+        );
+
+
+      eventValidation
+        .validateEvent
+        .mockReturnValue({
+          isValid: true,
+          errors: {},
+        });
+
+
+
+      eventModel
+        .updateEvent
+        .mockReturnValue(
+          updatedEvent
+        );
+
 
 
       // Act
-      const result = editEvent(
-        1,
-        updatedEvent
-      );
+      const result =
+        editEvent(
+          1,
+          updatedEvent
+        );
+
 
 
       // Assert
       expect(result)
-        .toEqual(updatedEvent);
+        .toEqual(
+          updatedEvent
+        );
+
+
+      expect(
+        eventModel.findEventById
+      )
+      .toHaveBeenCalledWith(1);
 
 
       expect(
         eventModel.updateEvent
-      ).toHaveBeenCalledWith(
+      )
+      .toHaveBeenCalledWith(
         1,
         updatedEvent
       );
@@ -170,9 +325,12 @@ describe("Event Service", () => {
 
 
       // Arrange
-      eventModel.updateEvent.mockReturnValue(
-        null
-      );
+      eventModel
+        .findEventById
+        .mockReturnValue(
+          null
+        );
+
 
 
       // Act + Assert
@@ -180,10 +338,12 @@ describe("Event Service", () => {
         editEvent(
           999,
           {
-            title: "Invalid",
+            title:
+              "Invalid",
           }
         )
-      ).toThrow(
+      )
+      .toThrow(
         "Event not found."
       );
 
@@ -195,6 +355,7 @@ describe("Event Service", () => {
 
 
 
+
   describe("Delete Event", () => {
 
 
@@ -202,29 +363,54 @@ describe("Event Service", () => {
 
 
       // Arrange
-      eventModel.deleteEvent.mockReturnValue(
-        true
-      );
+      eventModel
+        .findEventById
+        .mockReturnValue({
+          id:1,
+          title:
+            "Barangay Assembly",
+        });
+
+
+      eventModel
+        .deleteEvent
+        .mockReturnValue(
+          true
+        );
+
 
 
       // Act
-      const result = removeEvent(1);
+      const result =
+        removeEvent(1);
+
 
 
       // Assert
       expect(result)
-        .toEqual({
-          message:
-            "Event deleted successfully.",
-        });
+      .toEqual({
+        message:
+          "Event deleted successfully.",
+      });
+
+
+
+      expect(
+        eventModel.findEventById
+      )
+      .toHaveBeenCalledWith(1);
+
 
 
       expect(
         eventModel.deleteEvent
-      ).toHaveBeenCalledWith(1);
+      )
+      .toHaveBeenCalledWith(1);
+
 
 
     });
+
 
 
 
@@ -232,15 +418,19 @@ describe("Event Service", () => {
 
 
       // Arrange
-      eventModel.deleteEvent.mockReturnValue(
-        false
-      );
+      eventModel
+        .findEventById
+        .mockReturnValue(
+          null
+        );
+
 
 
       // Act + Assert
       expect(() =>
         removeEvent(999)
-      ).toThrow(
+      )
+      .toThrow(
         "Event not found."
       );
 
