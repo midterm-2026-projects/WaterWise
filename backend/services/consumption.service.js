@@ -1,4 +1,4 @@
-import { getPurokPredictionData } from "../models/purokPrediction.model.js";
+import { getPurokPredictionData } from "../models/consumption.model.js";
 
 const calculatePrediction = (values) => {
   if (values.length === 0) return 0;
@@ -58,6 +58,62 @@ export const generateMonthlyPrediction = () => {
       latestYear,
       historical,
       predicted: predictedConsumption,
+    };
+  });
+};
+
+export const generateYearlyPrediction = () => {
+  const records =
+    getPurokPredictionData();
+
+  const puroks = [
+    ...new Set(
+      records.map(
+        (record) => record.purok
+      )
+    ),
+  ];
+
+  return puroks.map((purok) => {
+    const historical =
+      records
+        .filter(
+          (record) =>
+            record.purok === purok
+        )
+        .sort(
+          (a, b) =>
+            a.year - b.year
+        )
+        .map((record) => {
+          const totalConsumption =
+            getConsumptionFields(
+              record
+            ).reduce(
+              (sum, field) =>
+                sum + record[field],
+              0
+            );
+
+          return {
+            year: record.year,
+            consumption:
+              totalConsumption,
+          };
+        });
+
+    const predictedConsumption =
+      calculatePrediction(
+        historical.map(
+          (item) => item.consumption
+        )
+      );
+
+    return {
+      purok,
+      historical,
+      predicted:
+        predictedConsumption,
     };
   });
 };

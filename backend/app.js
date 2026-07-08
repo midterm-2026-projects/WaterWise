@@ -1,7 +1,7 @@
 import express from 'express';
 import notificationRoutes from './routes/notificationRoutes.js';
 import predictionRoutes from './routes/predictionRoutes.js';
-import purokPredictionRoutes from "./routes/purokPrediction.routes.js";
+import purokPredictionRoutes from "./routes/consumption.routes.js";
 // import consumptionRankingRoutes from "./routes/consumptionRanking.routes.js";
 
 const app = express();
