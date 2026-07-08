@@ -1,7 +1,29 @@
 import {
+  generatePurokMonthlyPrediction,
+  generatePurokYearlyPrediction,
   generateMonthlyPrediction,
   generateYearlyPrediction,
-} from "../services/consumption.service.js";
+} from "../services/prediction.service.js";
+
+export const getPurokMonthlyPrediction = (
+  req,
+  res
+) => {
+  const predictions =
+    generatePurokMonthlyPrediction();
+
+  res.status(200).json(predictions);
+};
+
+export const getPurokYearlyPrediction = (
+  req,
+  res
+) => {
+  const predictions =
+    generatePurokYearlyPrediction();
+
+  res.status(200).json(predictions);
+};
 
 export const getMonthlyPrediction = (
   req,
