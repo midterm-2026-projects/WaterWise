@@ -2,8 +2,8 @@ import { notificationModel } from '../models/notificationModel.js';
 
 export const notificationService = {
 
-  getUserNotifications: (userId) => {
-    const allAlerts = notificationModel.findAll();
+  getUserNotifications: async (userId) => {
+    const allAlerts = await notificationModel.findAll();
     const userRows = allAlerts.filter(item => item.profile_id === userId);
     
     const accountBills = userRows.filter(item => item.category === 'bill');
@@ -16,8 +16,8 @@ export const notificationService = {
     };
   },
 
-  markAsRead: (notificationId, userId) => {
-    const targetAlert = notificationModel.findById(notificationId);
+  markAsRead: async (notificationId, userId) => {
+    const targetAlert = await notificationModel.findById(notificationId);
 
     if (!targetAlert) {
       return { errorType: 'NOT_FOUND', data: { error: 'Not Found' } };
@@ -33,7 +33,7 @@ export const notificationService = {
       };
     }
 
-    const updatedRecord = notificationModel.updateReadStatus(notificationId, true);
+    const updatedRecord = await notificationModel.updateReadStatus(notificationId, true);
     return { errorType: null, data: { modified: true, id: updatedRecord.id, is_read: updatedRecord.is_read } };
   }
 };

@@ -18,15 +18,15 @@ let temporaryDatabaseAlerts = [
 ];
 
 export const notificationModel = {
-  findAll: () => {
+  findAll: async () => {
     return [...temporaryDatabaseAlerts];
   },
 
-  findById: (id) => {
+  findById: async (id) => {
     return temporaryDatabaseAlerts.find(item => item.id === id) || null;
   },
 
-  updateReadStatus: (id, isRead) => {
+  updateReadStatus: async (id, isRead) => {
     const alert = temporaryDatabaseAlerts.find(item => item.id === id);
     if (alert) {
       alert.is_read = isRead;
