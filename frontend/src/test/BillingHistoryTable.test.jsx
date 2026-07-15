@@ -63,4 +63,17 @@ describe('BillingHistoryTable', () => {
     expect(selectMock).toHaveBeenCalledTimes(1);
     expect(selectMock).toHaveBeenCalledWith(mockHistory[0]);
   });
+
+  it("should render an empty billing history table when no records are provided", () => {
+  render(
+    <BillingHistoryTable
+      historyData={[]}
+      onSelectReceipt={() => {}}
+    />
+  );
+
+  expect(
+    screen.queryAllByTestId("history-row")
+  ).toHaveLength(0);
+});
 });

@@ -10,35 +10,48 @@ function PaymentForm({ onSubmit = () => {} }) {
   };
 
   const [form, setForm] = useState(initialState);
-  const [remainingBalance, setRemainingBalance] = useState(0);
-  const [paymentStatus, setPaymentStatus] = useState("Unpaid");
+  const [remainingBalance, setRemainingBalance] =
+    useState(0);
+  const [paymentStatus, setPaymentStatus] =
+    useState("Unpaid");
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const balance = Number(form.currentBalance) || 0;
-    const paid = Number(form.amountPaid) || 0;
+    const balance =
+      Number(form.currentBalance) || 0;
 
-    const remaining = balance - paid;
+    const paid =
+      Number(form.amountPaid) || 0;
 
-    setRemainingBalance(remaining < 0 ? 0 : remaining);
+    const remaining = Math.max(
+      balance - paid,
+      0
+    );
 
-    if (balance > 0 && paid >= balance) {
+    setRemainingBalance(remaining);
+
+    if (paid <= 0) {
+      setPaymentStatus("Unpaid");
+    } else if (paid >= balance) {
       setPaymentStatus("Paid");
     } else {
-      setPaymentStatus("Unpaid");
+      setPaymentStatus("Partially Paid");
     }
-  }, [form.currentBalance, form.amountPaid]);
+  }, [
+    form.currentBalance,
+    form.amountPaid,
+  ]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
-    setForm((prev) => ({
-      ...prev,
+    setForm((previous) => ({
+      ...previous,
       [name]: value,
     }));
 
-    setErrors((prev) => ({
-      ...prev,
+    setErrors((previous) => ({
+      ...previous,
       [name]: "",
     }));
   };
@@ -47,16 +60,21 @@ function PaymentForm({ onSubmit = () => {} }) {
     const newErrors = {};
 
     if (!form.consumerName.trim()) {
-      newErrors.consumerName = "Consumer Name is required.";
+      newErrors.consumerName =
+        "Consumer Name is required.";
     }
 
     if (!form.currentBalance) {
-      newErrors.currentBalance = "Current Balance is required.";
+      newErrors.currentBalance =
+        "Current Balance is required.";
     }
 
     if (!form.amountPaid) {
-      newErrors.amountPaid = "Amount Paid is required.";
-    } else if (Number(form.amountPaid) <= 0) {
+      newErrors.amountPaid =
+        "Amount Paid is required.";
+    } else if (
+      Number(form.amountPaid) <= 0
+    ) {
       newErrors.amountPaid =
         "Amount Paid must be greater than zero.";
     } else if (
@@ -68,7 +86,8 @@ function PaymentForm({ onSubmit = () => {} }) {
     }
 
     if (!form.paymentDate) {
-      newErrors.paymentDate = "Payment Date is required.";
+      newErrors.paymentDate =
+        "Payment Date is required.";
     }
 
     if (!form.paymentMethod.trim()) {
@@ -78,17 +97,23 @@ function PaymentForm({ onSubmit = () => {} }) {
 
     setErrors(newErrors);
 
-    return Object.keys(newErrors).length === 0;
+    return (
+      Object.keys(newErrors).length === 0
+    );
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
 
     onSubmit({
       ...form,
-      currentBalance: Number(form.currentBalance),
+      currentBalance: Number(
+        form.currentBalance
+      ),
       amountPaid: Number(form.amountPaid),
       remainingBalance,
       paymentStatus,
@@ -125,7 +150,10 @@ function PaymentForm({ onSubmit = () => {} }) {
         />
 
         {errors.consumerName && (
-          <p role="alert" className="text-red-500">
+          <p
+            role="alert"
+            className="text-red-500"
+          >
             {errors.consumerName}
           </p>
         )}
@@ -147,7 +175,10 @@ function PaymentForm({ onSubmit = () => {} }) {
         />
 
         {errors.currentBalance && (
-          <p role="alert" className="text-red-500">
+          <p
+            role="alert"
+            className="text-red-500"
+          >
             {errors.currentBalance}
           </p>
         )}
@@ -169,7 +200,10 @@ function PaymentForm({ onSubmit = () => {} }) {
         />
 
         {errors.amountPaid && (
-          <p role="alert" className="text-red-500">
+          <p
+            role="alert"
+            className="text-red-500"
+          >
             {errors.amountPaid}
           </p>
         )}
@@ -190,7 +224,10 @@ function PaymentForm({ onSubmit = () => {} }) {
         />
 
         {errors.paymentDate && (
-          <p role="alert" className="text-red-500">
+          <p
+            role="alert"
+            className="text-red-500"
+          >
             {errors.paymentDate}
           </p>
         )}
@@ -212,7 +249,10 @@ function PaymentForm({ onSubmit = () => {} }) {
         />
 
         {errors.paymentMethod && (
-          <p role="alert" className="text-red-500">
+          <p
+            role="alert"
+            className="text-red-500"
+          >
             {errors.paymentMethod}
           </p>
         )}
@@ -220,12 +260,16 @@ function PaymentForm({ onSubmit = () => {} }) {
 
       <div className="bg-gray-100 rounded p-4">
         <p>
-          <strong>Remaining Balance:</strong>{" "}
+          <strong>
+            Remaining Balance:
+          </strong>{" "}
           {remainingBalance}
         </p>
 
         <p>
-          <strong>Payment Status:</strong>{" "}
+          <strong>
+            Payment Status:
+          </strong>{" "}
           {paymentStatus}
         </p>
       </div>
