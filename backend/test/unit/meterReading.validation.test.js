@@ -4,7 +4,7 @@ import {
   expect,
 } from "vitest";
 
-import validateMeterReading from "../validation/meterReading.validation.js";
+import validateMeterReading from "../../validation/meterReading.validation.js";
 
 describe(
   "Meter Reading Validation",

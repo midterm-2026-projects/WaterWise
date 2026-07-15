@@ -8,7 +8,7 @@ import {
   vi,
 } from "vitest";
 
-import router from "../routes/meterReading.routes.js";
+import router from "../../routes/meterReading.routes.js";
 
 import {
   fetchMeterReadings,
@@ -16,7 +16,7 @@ import {
   addMeterReading,
   editMeterReading,
   removeMeterReading,
-} from "../services/meterReading.service.js";
+} from "../../services/meterReading.service.js";
 
 vi.mock("../services/meterReading.service.js", () => ({
   fetchMeterReadings: vi.fn(),

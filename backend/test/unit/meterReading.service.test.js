@@ -12,7 +12,7 @@ import {
   addMeterReading,
   editMeterReading,
   removeMeterReading,
-} from "../services/meterReading.service.js";
+} from "../../services/meterReading.service.js";
 
 import {
   getMeterReadings,
@@ -20,9 +20,9 @@ import {
   createMeterReading,
   updateMeterReading,
   deleteMeterReading,
-} from "../models/meterReading.model.js";
+} from "../../models/meterReading.model.js";
 
-import validateMeterReading from "../validation/meterReading.validation.js";
+import validateMeterReading from "../../validation/meterReading.validation.js";
 
 vi.mock(
   "../models/meterReading.model.js",

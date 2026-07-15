@@ -6,7 +6,7 @@ import {
 
 import {
   validatePayment,
-} from "../validation/payment.validation.js";
+} from "../../validation/payment.validation.js";
 
 describe("Payment Validation", () => {
   it("should validate a correct payment", () => {

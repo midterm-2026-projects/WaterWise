@@ -12,9 +12,9 @@ import {
   processPayment,
   fetchAllBilling,
   fetchBilling,
-} from "../services/billing.service.js";
+} from "../../services/billing.service.js";
 
-import * as billingModel from "../models/billing.model.js";
+import * as billingModel from "../../models/billing.model.js";
 
 vi.mock("../models/billing.model.js", () => ({
   fetchBillingRecords: vi.fn(),
