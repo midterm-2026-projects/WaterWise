@@ -8,10 +8,10 @@ import {
 
 import {
   ai,
-} from "../config/gemini.js";
+} from "../../config/gemini.js";
 
 vi.mock(
-  "../models/consumption.model.js",
+  "../../models/consumption.model.js",
   () => ({
     getPurokPredictionData: vi.fn(),
     getMonthlyBillingData: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock(
 );
 
 vi.mock(
-  "../config/gemini.js",
+  "../../config/gemini.js",
   () => ({
     
     ai:{
@@ -47,7 +47,7 @@ import {
   getMonthlyBillingData,
   getYearlyBillingData,
   getPurokConsumptionRanking,
-} from "../models/consumption.model.js";
+} from "../../models/consumption.model.js";
 
 import {
   generatePurokMonthlyPrediction,
@@ -69,7 +69,7 @@ import {
   generateOverallYearlyPrediction,
   generatePerPurokMonthlyPrediction,
 
-} from "../services/consumption.service.js";
+} from "../../services/consumption.service.js";
 
 describe("Consumption Service", () => {
 

@@ -4,7 +4,7 @@ import path from 'path';
 
 describe('DDL Schema File Constraints Verification', () => {
   it('must compile the consumption-optimized DDL script without syntax structural failures', () => {
-    const migrationPath = path.resolve(__dirname, '../db/migration.sql');
+    const migrationPath = path.resolve(__dirname, '../../db/migration.sql');
     const sqlContent = fs.readFileSync(migrationPath, 'utf8');
 
     expect(sqlContent).toContain('CREATE TABLE IF NOT EXISTS profiles');

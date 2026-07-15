@@ -8,7 +8,7 @@ import {
 import {
   loginUser,
   clearSession,
-} from "../services/AuthService.js";
+} from "../../services/AuthService.js";
 
 describe(
   "Login Service",

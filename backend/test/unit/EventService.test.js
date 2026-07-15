@@ -7,7 +7,7 @@ import {
 } from "vitest";
 
 
-vi.mock("../models/EventModel.js", () => ({
+vi.mock("../../models/EventModel.js", () => ({
   insertEvent: vi.fn(),
   getEvents: vi.fn(),
   findEventById: vi.fn(),
@@ -16,14 +16,14 @@ vi.mock("../models/EventModel.js", () => ({
 }));
 
 
-vi.mock("../validation/EventValidation.js", () => ({
+vi.mock("../../validation/EventValidation.js", () => ({
   validateEvent: vi.fn(),
 }));
 
 
-import * as eventModel from "../models/EventModel.js";
+import * as eventModel from "../../models/EventModel.js";
 
-import * as eventValidation from "../validation/EventValidation.js";
+import * as eventValidation from "../../validation/EventValidation.js";
 
 
 import {
@@ -32,7 +32,7 @@ import {
   searchEvent,
   editEvent,
   removeEvent,
-} from "../services/EventService.js";
+} from "../../services/EventService.js";
 
 
 

@@ -7,7 +7,7 @@ import {
 
 import {
   validateAnnouncement,
-} from "../validation/AnnouncementValidation.js";
+} from "../../validation/AnnouncementValidation.js";
 
 
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { consumerModel } from '../models/consumerModel.js';
+import { consumerModel } from '../../models/consumerModel.js';
 
 describe('Database-Level Consumer Protection Constraints', () => {
   it('must block unauthorized cross-account read attempts across mismatched parameters', async () => {

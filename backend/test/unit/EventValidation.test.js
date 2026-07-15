@@ -6,7 +6,7 @@ import {
 
 import {
   validateEvent,
-} from "../validation/EventValidation.js";
+} from "../../validation/EventValidation.js";
 
 
 describe("Event Validation", () => {

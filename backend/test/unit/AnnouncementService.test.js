@@ -8,7 +8,7 @@ import {
 
 
 
-vi.mock("../models/AnnouncementModel.js", () => ({
+vi.mock("../../models/AnnouncementModel.js", () => ({
   insertAnnouncement: vi.fn(),
   getAnnouncements: vi.fn(),
   findAnnouncementById: vi.fn(),
@@ -18,15 +18,15 @@ vi.mock("../models/AnnouncementModel.js", () => ({
 
 
 
-vi.mock("../validation/AnnouncementValidation.js", () => ({
+vi.mock("../../validation/AnnouncementValidation.js", () => ({
   validateAnnouncement: vi.fn(),
 }));
 
 
 
-import * as announcementModel from "../models/AnnouncementModel.js";
+import * as announcementModel from "../../models/AnnouncementModel.js";
 
-import * as announcementValidation from "../validation/AnnouncementValidation.js";
+import * as announcementValidation from "../../validation/AnnouncementValidation.js";
 
 
 import {
@@ -35,7 +35,7 @@ import {
   searchAnnouncement,
   editAnnouncement,
   removeAnnouncement,
-} from "../services/AnnouncementService.js";
+} from "../../services/AnnouncementService.js";
 
 
 

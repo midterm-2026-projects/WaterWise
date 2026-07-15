@@ -7,7 +7,7 @@ import {
 } from "vitest";
 
 vi.mock(
-  "../services/AuthService.js",
+  "../../services/AuthService.js",
   () => ({
 
     isAuthenticated: vi.fn(),
@@ -17,11 +17,11 @@ vi.mock(
 
 import {
   isAuthenticated,
-} from "../services/AuthService.js";
+} from "../../services/AuthService.js";
 
 import {
   authenticate,
-} from "../middleware/AuthMiddleware.js";
+} from "../../middleware/AuthMiddleware.js";
 
 describe(
   "Authentication Middleware",

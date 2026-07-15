@@ -9,10 +9,8 @@ import request from "supertest";
 
 import express from "express";
 
-
-
 vi.mock(
-  "../controllers/AuthController.js",
+  "../../controllers/AuthController.js",
   () => ({
 
     login:
@@ -23,8 +21,6 @@ vi.mock(
           email,
           password,
         } = req.body;
-
-
 
         // Check missing fields
 
@@ -46,8 +42,6 @@ vi.mock(
 
         }
 
-
-
         // Check credentials
 
         if (
@@ -67,8 +61,6 @@ vi.mock(
             });
 
         }
-
-
 
         // Successful login
 
@@ -101,7 +93,6 @@ vi.mock(
       },
 
 
-
     logout:
 
       (req, res) => {
@@ -120,7 +111,6 @@ vi.mock(
 
 
       },
-
 
 
     currentUser:
@@ -161,7 +151,7 @@ vi.mock(
 
 
 vi.mock(
-  "../middleware/AuthMiddleware.js",
+  "../../middleware/AuthMiddleware.js",
   () => ({
 
     authenticate:
@@ -173,7 +163,7 @@ vi.mock(
 
 
 
-import AuthRoutes from "../routes/AuthRoutes.js";
+import AuthRoutes from "../../routes/AuthRoutes.js";
 
 
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { notificationService } from '../services/notificationService.js';
-import { notificationModel } from '../models/notificationModel.js';
+import { notificationService } from '../../services/notificationService.js';
+import { notificationModel } from '../../models/notificationModel.js';
 
 describe('notificationService', () => {
 

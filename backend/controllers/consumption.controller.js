@@ -9,10 +9,18 @@ import {
   getOverallMonthlyHistory,
   getOverallYearlyHistory,
   getPerPurokMonthlyHistory,
+  getPerPurokYearlyHistory,
+  getAllPuroksMonthlyHistory as getAllPuroksMonthlyHistoryService,
+  getAllPuroksYearlyHistory as getAllPuroksYearlyHistoryService,
+  getAllHistoryConsumption,
 
   generateOverallMonthlyPrediction,
   generateOverallYearlyPrediction,
   generatePerPurokMonthlyPrediction,
+  generatePerPurokYearlyPrediction,
+  generateAllPuroksMonthlyPrediction,
+  generateAllPuroksYearlyPrediction,
+  generateAllPredictionsService,
 
   // listGeminiModels,
 } from "../services/consumption.service.js";
@@ -116,6 +124,59 @@ export const getPurokMonthlyHistory = (
   res.status(200).json(history);
 };
 
+export const getPurokYearlyHistory = (
+  req,
+  res
+) => {
+  const { purok } = req.params;
+
+  const history =
+    getPerPurokYearlyHistory(
+      purok
+    );
+
+  res.status(200).json(history);
+};
+
+export const getAllPuroksMonthlyHistory = (
+  req,
+  res
+) => {
+  const history =
+    getAllPuroksMonthlyHistoryService();
+
+  res.status(200).json(history);
+};
+
+export const getAllPuroksYearlyHistory = (
+  req,
+  res
+) => {
+  const history =
+    getAllPuroksYearlyHistoryService();
+
+  res.status(200).json(history);
+};
+
+// Generate All History Consumption
+export const generateAllHistoryConsumption =
+  (req, res) => {
+    try {
+      const history =
+        getAllHistoryConsumption();
+
+      res.status(200).json({
+        success: true,
+        data: history,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
 // New Prediction Functions Using AI
 
 //  Overall Monthly Prediction
@@ -178,3 +239,102 @@ export const getPerPurokMonthlyPrediction =
       });
     }
   };
+
+//  Per Purok Yearly Prediction
+export const getPerPurokYearlyPrediction =
+  async (req, res) => {
+    try {
+      const { purok } = req.params;
+
+      const prediction =
+        await generatePerPurokYearlyPrediction(
+          purok
+        );
+
+      res.status(200).json({
+        success: true,
+        data: prediction,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+//  All Puroks Monthly Prediction
+export const getAllPuroksMonthlyPrediction =
+  async (req, res) => {
+    try {
+      const prediction =
+        await generateAllPuroksMonthlyPrediction();
+
+      res.status(200).json({
+        success: true,
+        data: prediction,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+//  All Puroks Yearly Prediction
+export const getAllPuroksYearlyPrediction =
+  async (req, res) => {
+    try {
+      const prediction =
+        await generateAllPuroksYearlyPrediction();
+
+      res.status(200).json({
+        success: true,
+        data: prediction,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+// Generate All Predictions
+export const generateAllPredictions =
+  async (req, res) => {
+    try {
+      const predictions =
+        await generateAllPredictionsService();
+
+      res.status(200).json({
+        success: true,
+        data: predictions,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+// Check for AI models
+
+// export const getGeminiModels = async (req, res) => {
+//   try {
+//     const models = await listGeminiModels();
+//
+//     res.status(200).json({
+//       success: true,
+//       count: models.length,
+//       data: models,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };

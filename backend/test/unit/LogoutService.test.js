@@ -10,7 +10,7 @@ import {
   loginUser,
   logoutUser,
   clearSession,
-} from "../services/AuthService.js";
+} from "../../services/AuthService.js";
 
 describe(
   "Logout Service",
