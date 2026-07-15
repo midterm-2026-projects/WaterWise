@@ -3,13 +3,13 @@ import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
-router.get('/api/notifications', (req, res) => {
+router.get('/api/notifications', async (req, res) => {
   req.user = { id: 'owner-uuid-101' };
-  const payload = notificationService.getUserNotifications(req.user.id);
+  const payload = await notificationService.getUserNotifications(req.user.id);
   return res.status(200).json(payload);
 });
 
-router.put('/api/notifications/:id/read', (req, res) => {
+router.put('/api/notifications/:id/read', async (req, res) => {
   const authHeader = req.headers['authorization'];
   
   if (authHeader === 'Bearer cross-account-attacker-token') {
@@ -18,7 +18,7 @@ router.put('/api/notifications/:id/read', (req, res) => {
     req.user = { id: 'owner-uuid-101' };
   }
 
-  const { errorType, data } = notificationService.markAsRead(req.params.id, req.user.id);
+  const { errorType, data } = await notificationService.markAsRead(req.params.id, req.user.id);
   
   if (errorType === 'NOT_FOUND') return res.status(404).json(data);
   if (errorType === 'FORBIDDEN') return res.status(403).json(data);

@@ -1,5 +1,4 @@
-import { mockAnalyticsData } from "../data/mockAnalyticsData.js";
-import { mockAnalyticsData } from "../data/mockAnalyticsData.js";
+import { mockAnalyticsData, purokConsumptionRanking } from "../data/mockAnalyticsData.js";
 
 export const getPurokPredictionData = () => {
   return mockAnalyticsData;
@@ -10,3 +9,7 @@ export const getYearlyBillingData = () => {
 export const getMonthlyBillingData = () => {
   return mockBillingData;
 };
+export const getPurokConsumptionRanking = () => {
+  return purokConsumptionRanking;
+};
+

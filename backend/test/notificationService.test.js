@@ -31,8 +31,8 @@ describe('notificationService', () => {
   });
 
   describe('getUserNotifications Analytics Flow', () => {
-    it('must exactly tally and categorize notifications into isolated target account streams', () => {
-      const result = notificationService.getUserNotifications('user-alpha');
+    it('must exactly tally and categorize notifications into isolated target account streams', async () => {
+      const result = await notificationService.getUserNotifications('user-alpha');
 
       expect(result.unreadCount).toBe(2);
       expect(result.streams.accountBills).toHaveLength(1);
@@ -42,8 +42,8 @@ describe('notificationService', () => {
       expect(result.streams.adminAnnouncements[0].id).toBe('unit-alert-announce');
     });
 
-    it('returns empty collections cleanly if a targeted user context has zero associated data entries', () => {
-      const result = notificationService.getUserNotifications('user-empty-999');
+    it('returns empty collections cleanly if a targeted user context has zero associated data entries', async () => {
+      const result = await notificationService.getUserNotifications('user-empty-999');
 
       expect(result.unreadCount).toBe(0);
       expect(result.streams.accountBills).toHaveLength(0);
@@ -52,30 +52,30 @@ describe('notificationService', () => {
   });
 
   describe('markAsRead Boundary Logic Controls', () => {
-    it('alters records flags accurately inside storage structures upon legitimate interaction tracking matches', () => {
-      const result = notificationService.markAsRead('unit-alert-bill', 'user-alpha');
+    it('alters records flags accurately inside storage structures upon legitimate interaction tracking matches', async () => {
+      const result = await notificationService.markAsRead('unit-alert-bill', 'user-alpha');
 
       expect(result.errorType).toBeNull();
       expect(result.data.modified).toBe(true);
       expect(result.data.is_read).toBe(true);
 
 
-      const verifiedRecord = notificationModel.findById('unit-alert-bill');
+      const verifiedRecord = await notificationModel.findById('unit-alert-bill');
       expect(verifiedRecord.is_read).toBe(true);
     });
 
-    it('intercepts processing loops returning an error code contract matching FORBIDDEN profiles when accessing cross-account sets', () => {
-      const result = notificationService.markAsRead('unit-alert-foreign', 'user-alpha');
+    it('intercepts processing loops returning an error code contract matching FORBIDDEN profiles when accessing cross-account sets', async () => {
+      const result = await notificationService.markAsRead('unit-alert-foreign', 'user-alpha');
 
       expect(result.errorType).toBe('FORBIDDEN');
       expect(result.data.error).toBe('Forbidden');
       
-      const recordState = notificationModel.findById('unit-alert-foreign');
+      const recordState = await notificationModel.findById('unit-alert-foreign');
       expect(recordState.is_read).toBe(false);
     });
 
-    it('returns an error code contract matching NOT_FOUND parameters when provided a non-existent lookup ID key', () => {
-      const result = notificationService.markAsRead('non-existent-alert-uuid', 'user-alpha');
+    it('returns an error code contract matching NOT_FOUND parameters when provided a non-existent lookup ID key', async () => {
+      const result = await notificationService.markAsRead('non-existent-alert-uuid', 'user-alpha');
 
       expect(result.errorType).toBe('NOT_FOUND');
       expect(result.data.error).toBe('Not Found');
