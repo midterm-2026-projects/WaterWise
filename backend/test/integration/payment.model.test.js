@@ -7,13 +7,13 @@ import {
 
 import {
   paymentTransactions,
-} from "../data/paymentData.js";
+} from "../../data/paymentData.js";
 
 import {
   fetchPayments,
   fetchPaymentById,
   createPayment,
-} from "../models/payment.model.js";
+} from "../../models/payment.model.js";
 
 describe("Payment Model", () => {
   const originalPayments =

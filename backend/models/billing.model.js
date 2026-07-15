@@ -1,4 +1,4 @@
-import mockBillingData from "/data/mockBillingData.js";
+import mockBillingData from "../data/mockBillingData.js";
 
 export function fetchBillingRecords() {
   return mockBillingData;

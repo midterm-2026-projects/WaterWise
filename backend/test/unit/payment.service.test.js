@@ -10,11 +10,11 @@ import {
   recordPayment,
   getPaymentHistory,
   getPaymentByBillingId,
-} from "../services/payment.service.js";
+} from "../../services/payment.service.js";
 
-import * as billingModel from "../models/billing.model.js";
+import * as billingModel from "../../models/billing.model.js";
 
-vi.mock("../models/billing.model.js", () => ({
+vi.mock("../../models/billing.model.js", () => ({
   fetchBillingRecordById:
     vi.fn(),
 

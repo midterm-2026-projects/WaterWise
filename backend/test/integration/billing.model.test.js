@@ -14,7 +14,7 @@ import {
   insertBillingRecord,
   updateBillingRecord,
   removeBillingRecord,
-} from "../models/billing.model.js";
+} from "../../models/billing.model.js";
 
 describe("Billing Model", () => {
   const originalRecords =
