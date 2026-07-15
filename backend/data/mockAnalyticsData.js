@@ -294,3 +294,12 @@ export const mockAnalyticsData = [
     may: 165,
   },
 ];
+
+export const purokConsumptionRanking = [
+  { purok: "Purok 1", consumption: 1250 },
+  { purok: "Purok 2", consumption: 980 },
+  { purok: "Purok 3", consumption: 1675 },
+  { purok: "Purok 4", consumption: 1110 },
+  { purok: "Purok 5", consumption: 890 },
+  { purok: "Purok 6", consumption: 1450 },
+];
