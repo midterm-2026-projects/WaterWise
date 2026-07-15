@@ -1,18 +1,14 @@
+import express from "express";
+import request from "supertest";
 import {
-  describe,
-  it,
-  expect,
   beforeEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
 
-import {
-  getMeterReadings,
-  getMeterReading,
-  createMeterReading,
-  updateMeterReading,
-  deleteMeterReading,
-} from "../controllers/meterReading.controller.js";
+import router from "../routes/meterReading.routes.js";
 
 import {
   fetchMeterReadings,
@@ -22,488 +18,283 @@ import {
   removeMeterReading,
 } from "../services/meterReading.service.js";
 
-vi.mock(
-  "../services/meterReading.service.js",
-  () => ({
-    fetchMeterReadings: vi.fn(),
-    fetchMeterReadingById: vi.fn(),
-    addMeterReading: vi.fn(),
-    editMeterReading: vi.fn(),
-    removeMeterReading: vi.fn(),
-  })
-);
+vi.mock("../services/meterReading.service.js", () => ({
+  fetchMeterReadings: vi.fn(),
+  fetchMeterReadingById: vi.fn(),
+  addMeterReading: vi.fn(),
+  editMeterReading: vi.fn(),
+  removeMeterReading: vi.fn(),
+}));
 
-describe(
-  "Meter Reading Controller",
-  () => {
-    let req;
-    let res;
+const app = express();
 
-    beforeEach(() => {
-      vi.clearAllMocks();
+app.use(express.json());
+app.use("/", router);
 
-      req = {
-        params: {},
-        body: {},
-      };
+describe("Meter Reading Controller", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-      res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      };
+  describe("GET /meter-readings", () => {
+    it("should return all meter readings", async () => {
+      // Arrange
+      const readings = [
+        {
+          id: 1,
+          consumerName: "Juan",
+        },
+      ];
+
+      fetchMeterReadings.mockReturnValue(readings);
+
+      // Act
+      const response = await request(app).get(
+        "/meter-readings"
+      );
+
+      // Assert
+      expect(fetchMeterReadings).toHaveBeenCalled();
+
+      expect(response.status).toBe(200);
+
+      expect(response.body).toEqual(readings);
     });
 
-    describe(
-      "getMeterReadings",
-      () => {
-        it(
-          "should return all meter readings",
-          async () => {
-            // Arrange
+    it("should return 500 when service throws", async () => {
+      // Arrange
+      fetchMeterReadings.mockImplementation(() => {
+        throw new Error("Server Error");
+      });
 
-            const readings = [
-              {
-                id: 1,
-                consumerName:
-                  "Juan",
-              },
-            ];
+      // Act
+      const response = await request(app).get(
+        "/meter-readings"
+      );
 
-            fetchMeterReadings.mockReturnValue(
-              readings
-            );
+      // Assert
+      expect(response.status).toBe(500);
 
-            // Act
+      expect(response.body).toEqual({
+        message: "Server Error",
+      });
+    });
+  });
 
-            await getMeterReadings(
-              req,
-              res
-            );
+  describe("GET /meter-readings/:id", () => {
+    it("should return one meter reading", async () => {
+      // Arrange
+      const reading = {
+        id: 1,
+        consumerName: "Juan",
+      };
 
-            // Assert
+      fetchMeterReadingById.mockReturnValue(
+        reading
+      );
 
-            expect(
-              fetchMeterReadings
-            ).toHaveBeenCalled();
+      // Act
+      const response = await request(app).get(
+        "/meter-readings/1"
+      );
 
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              200
-            );
+      // Assert
+      expect(fetchMeterReadingById)
+        .toHaveBeenCalledWith("1");
 
-            expect(
-              res.json
-            ).toHaveBeenCalledWith(
-              readings
-            );
-          }
+      expect(response.status).toBe(200);
+
+      expect(response.body).toEqual(reading);
+    });
+
+    it("should return 404 when record is not found", async () => {
+      // Arrange
+      fetchMeterReadingById.mockImplementation(() => {
+        throw new Error(
+          "Meter reading not found."
+        );
+      });
+
+      // Act
+      const response = await request(app).get(
+        "/meter-readings/99"
+      );
+
+      // Assert
+      expect(response.status).toBe(404);
+
+      expect(response.body).toEqual({
+        message:
+          "Meter reading not found.",
+      });
+    });
+  });
+
+  describe("POST /meter-readings", () => {
+    it("should create a meter reading", async () => {
+      // Arrange
+      const payload = {
+        consumerNo: "C-1001",
+      };
+
+      addMeterReading.mockReturnValue({
+        id: 1,
+        ...payload,
+      });
+
+      // Act
+      const response = await request(app)
+        .post("/meter-readings")
+        .send(payload);
+
+      // Assert
+      expect(addMeterReading)
+        .toHaveBeenCalledWith(payload);
+
+      expect(response.status).toBe(201);
+
+      expect(response.body).toEqual({
+        message:
+          "Meter reading created successfully.",
+        data: {
+          id: 1,
+          ...payload,
+        },
+      });
+    });
+
+    it("should return validation errors", async () => {
+      // Arrange
+      addMeterReading.mockImplementation(() => {
+        throw {
+          status: 400,
+          errors: {
+            consumerNo: "Required",
+          },
+        };
+      });
+
+      // Act
+      const response = await request(app)
+        .post("/meter-readings")
+        .send({});
+
+      // Assert
+      expect(response.status).toBe(400);
+
+      expect(response.body).toEqual({
+        message: "Validation failed.",
+        errors: {
+          consumerNo: "Required",
+        },
+      });
+    });
+  });
+
+  describe("PUT /meter-readings/:id", () => {
+    it("should update a meter reading", async () => {
+      // Arrange
+      const payload = {
+        consumerName: "Updated",
+      };
+
+      editMeterReading.mockReturnValue({
+        id: 1,
+        ...payload,
+      });
+
+      // Act
+      const response = await request(app)
+        .put("/meter-readings/1")
+        .send(payload);
+
+      // Assert
+      expect(editMeterReading)
+        .toHaveBeenCalledWith(
+          "1",
+          payload
         );
 
-        it(
-          "should return 500 when service throws",
-          async () => {
-            // Arrange
+      expect(response.status).toBe(200);
 
-            fetchMeterReadings.mockImplementation(
-              () => {
-                throw new Error(
-                  "Server Error"
-                );
-              }
-            );
+      expect(response.body).toEqual({
+        message:
+          "Meter reading updated successfully.",
+        data: {
+          id: 1,
+          ...payload,
+        },
+      });
+    });
 
-            // Act
-
-            await getMeterReadings(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              500
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Server Error",
-            });
-          }
+    it("should return 404 when record is not found", async () => {
+      // Arrange
+      editMeterReading.mockImplementation(() => {
+        throw new Error(
+          "Meter reading not found."
         );
-      }
-    );
+      });
 
-    describe(
-      "getMeterReading",
-      () => {
-        it(
-          "should return a meter reading",
-          async () => {
-            // Arrange
+      // Act
+      const response = await request(app)
+        .put("/meter-readings/1")
+        .send({});
 
-            req.params.id = 1;
+      // Assert
+      expect(response.status).toBe(404);
 
-            const reading = {
-              id: 1,
-              consumerName:
-                "Juan",
-            };
+      expect(response.body).toEqual({
+        message:
+          "Meter reading not found.",
+      });
+    });
+  });
 
-            fetchMeterReadingById.mockReturnValue(
-              reading
-            );
+  describe("DELETE /meter-readings/:id", () => {
+    it("should delete a meter reading", async () => {
+      // Arrange
+      removeMeterReading.mockReturnValue({
+        message:
+          "Meter reading deleted successfully.",
+      });
 
-            // Act
+      // Act
+      const response = await request(app).delete(
+        "/meter-readings/1"
+      );
 
-            await getMeterReading(
-              req,
-              res
-            );
+      // Assert
+      expect(removeMeterReading)
+        .toHaveBeenCalledWith("1");
 
-            // Assert
+      expect(response.status).toBe(200);
 
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              200
-            );
+      expect(response.body).toEqual({
+        message:
+          "Meter reading deleted successfully.",
+      });
+    });
 
-            expect(
-              res.json
-            ).toHaveBeenCalledWith(
-              reading
-            );
-          }
+    it("should return 404 when record is not found", async () => {
+      // Arrange
+      removeMeterReading.mockImplementation(() => {
+        throw new Error(
+          "Meter reading not found."
         );
+      });
 
-        it(
-          "should return 404 when record is not found",
-          async () => {
-            // Arrange
+      // Act
+      const response = await request(app).delete(
+        "/meter-readings/1"
+      );
 
-            req.params.id = 99;
+      // Assert
+      expect(response.status).toBe(404);
 
-            fetchMeterReadingById.mockImplementation(
-              () => {
-                throw new Error(
-                  "Meter reading not found."
-                );
-              }
-            );
-
-            // Act
-
-            await getMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              404
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading not found.",
-            });
-          }
-        );
-      }
-    );
-
-    describe(
-      "createMeterReading",
-      () => {
-        it(
-          "should create a meter reading",
-          async () => {
-            // Arrange
-
-            req.body = {
-              consumerNo:
-                "C-1001",
-            };
-
-            addMeterReading.mockReturnValue(
-              {
-                id: 1,
-                ...req.body,
-              }
-            );
-
-            // Act
-
-            await createMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              addMeterReading
-            ).toHaveBeenCalledWith(
-              req.body
-            );
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              201
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading created successfully.",
-              data: {
-                id: 1,
-                ...req.body,
-              },
-            });
-          }
-        );
-
-        it(
-          "should return validation errors",
-          async () => {
-            // Arrange
-
-            addMeterReading.mockImplementation(
-              () => {
-                throw {
-                  status: 400,
-                  errors: {
-                    consumerNo:
-                      "Required",
-                  },
-                };
-              }
-            );
-
-            // Act
-
-            await createMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              400
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Validation failed.",
-              errors: {
-                consumerNo:
-                  "Required",
-              },
-            });
-          }
-        );
-      }
-    );
-
-    describe(
-      "updateMeterReading",
-      () => {
-        it(
-          "should update a meter reading",
-          async () => {
-            // Arrange
-
-            req.params.id = 1;
-
-            req.body = {
-              consumerName:
-                "Updated",
-            };
-
-            editMeterReading.mockReturnValue(
-              {
-                id: 1,
-                ...req.body,
-              }
-            );
-
-            // Act
-
-            await updateMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              editMeterReading
-            ).toHaveBeenCalledWith(
-              1,
-              req.body
-            );
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              200
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading updated successfully.",
-              data: {
-                id: 1,
-                ...req.body,
-              },
-            });
-          }
-        );
-
-        it(
-          "should return 404 when updating missing record",
-          async () => {
-            // Arrange
-
-            editMeterReading.mockImplementation(
-              () => {
-                throw new Error(
-                  "Meter reading not found."
-                );
-              }
-            );
-
-            // Act
-
-            await updateMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              404
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading not found.",
-            });
-          }
-        );
-      }
-    );
-
-    describe(
-      "deleteMeterReading",
-      () => {
-        it(
-          "should delete a meter reading",
-          async () => {
-            // Arrange
-
-            req.params.id = 1;
-
-            removeMeterReading.mockReturnValue(
-              {
-                message:
-                  "Meter reading deleted successfully.",
-              }
-            );
-
-            // Act
-
-            await deleteMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              removeMeterReading
-            ).toHaveBeenCalledWith(
-              1
-            );
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              200
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading deleted successfully.",
-            });
-          }
-        );
-
-        it(
-          "should return 404 when deleting missing record",
-          async () => {
-            // Arrange
-
-            removeMeterReading.mockImplementation(
-              () => {
-                throw new Error(
-                  "Meter reading not found."
-                );
-              }
-            );
-
-            // Act
-
-            await deleteMeterReading(
-              req,
-              res
-            );
-
-            // Assert
-
-            expect(
-              res.status
-            ).toHaveBeenCalledWith(
-              404
-            );
-
-            expect(
-              res.json
-            ).toHaveBeenCalledWith({
-              message:
-                "Meter reading not found.",
-            });
-          }
-        );
-      }
-    );
-  }
-);
+      expect(response.body).toEqual({
+        message:
+          "Meter reading not found.",
+      });
+    });
+  });
+});
