@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import notificationRouter from '../routes/notificationRoutes.js';
+import notificationRouter from '../../routes/notificationRoutes.js';
 
 const app = express();
 app.use(express.json());
 app.use(notificationRouter);
 
-describe('Notification Backend Integration', () => {
+describe('Notification API Integration', () => {
 
   it('should return an HTTP 403 Forbidden status code when passing an invalid or cross-account notification ID parameter', async () => {
     const response = await request(app)
