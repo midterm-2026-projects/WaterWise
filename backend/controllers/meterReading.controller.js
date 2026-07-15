@@ -15,6 +15,7 @@ export async function getMeterReadings(
       fetchMeterReadings();
 
     res.status(200).json(readings);
+
   } catch (error) {
     res.status(500).json({
       message:
@@ -23,6 +24,7 @@ export async function getMeterReadings(
     });
   }
 }
+
 
 export async function getMeterReading(
   req,
@@ -35,14 +37,27 @@ export async function getMeterReading(
       );
 
     res.status(200).json(reading);
+
   } catch (error) {
-    res.status(404).json({
+
+    if (
+      error.message ===
+      "Meter reading not found."
+    ) {
+      return res.status(404).json({
+        message:
+          error.message,
+      });
+    }
+
+    res.status(500).json({
       message:
         error.message ||
-        "Meter reading not found.",
+        "Failed to retrieve meter reading.",
     });
   }
 }
+
 
 export async function createMeterReading(
   req,
@@ -50,19 +65,26 @@ export async function createMeterReading(
 ) {
   try {
     const reading =
-      addMeterReading(req.body);
+      addMeterReading(
+        req.body
+      );
 
     res.status(201).json({
       message:
         "Meter reading created successfully.",
       data: reading,
     });
+
   } catch (error) {
-    if (error.status === 400) {
+
+    if (
+      error.status === 400
+    ) {
       return res.status(400).json({
         message:
           "Validation failed.",
-        errors: error.errors,
+        errors:
+          error.errors,
       });
     }
 
@@ -73,6 +95,7 @@ export async function createMeterReading(
     });
   }
 }
+
 
 export async function updateMeterReading(
   req,
@@ -90,23 +113,31 @@ export async function updateMeterReading(
         "Meter reading updated successfully.",
       data: reading,
     });
+
   } catch (error) {
-    if (error.status === 400) {
+
+    if (
+      error.status === 400
+    ) {
       return res.status(400).json({
         message:
           "Validation failed.",
-        errors: error.errors,
+        errors:
+          error.errors,
       });
     }
+
 
     if (
       error.message ===
       "Meter reading not found."
     ) {
       return res.status(404).json({
-        message: error.message,
+        message:
+          error.message,
       });
     }
+
 
     res.status(500).json({
       message:
@@ -115,6 +146,7 @@ export async function updateMeterReading(
     });
   }
 }
+
 
 export async function deleteMeterReading(
   req,
@@ -127,15 +159,19 @@ export async function deleteMeterReading(
       );
 
     res.status(200).json(result);
+
   } catch (error) {
+
     if (
       error.message ===
       "Meter reading not found."
     ) {
       return res.status(404).json({
-        message: error.message,
+        message:
+          error.message,
       });
     }
+
 
     res.status(500).json({
       message:
