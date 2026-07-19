@@ -1,0 +1,32 @@
+export const paymentTransactions = [
+  {
+    paymentId: "PAY-001",
+    invoiceNumber: "INV-2026-001",
+    consumerName: "Juan Dela Cruz",
+    paymentDate: "2026-04-30",
+    paymentMethod: "Cash",
+    amountPaid: 1100,
+    remainingBalance: 0,
+    paymentStatus: "Paid",
+  },
+  {
+    paymentId: "PAY-002",
+    invoiceNumber: "INV-2026-002",
+    consumerName: "Maria Santos",
+    paymentDate: "2026-05-30",
+    paymentMethod: "GCash",
+    amountPaid: 450,
+    remainingBalance: 450,
+    paymentStatus: "Partially Paid",
+  },
+  {
+    paymentId: "PAY-003",
+    invoiceNumber: "INV-2026-003",
+    consumerName: "Pedro Reyes",
+    paymentDate: "",
+    paymentMethod: "",
+    amountPaid: 0,
+    remainingBalance: 1250,
+    paymentStatus: "Unpaid",
+  },
+];
