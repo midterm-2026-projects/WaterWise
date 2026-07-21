@@ -1,5 +1,6 @@
 // backend/models/consumption.model.js
 import { supabase } from "../config/supabase.js";
+import { mockAnalyticsData } from "../data/mockAnalyticsData.js";
 
 const MONTHS = [
   "january",
@@ -24,8 +25,43 @@ const formatPurok = (purokNo) => {
   return `Purok ${purokNo}`;
 };
 
+const usesInMemoryData = () =>
+  process.env.NODE_ENV === "test" ||
+  process.env.WATERWISE_E2E === "true";
+
+const getInMemoryConsumptionRecords = () =>
+  mockAnalyticsData.flatMap((record, recordIndex) => {
+    const purokNo = Number(
+      String(record.purok).match(/\d+/)?.[0]
+    );
+
+    return MONTHS
+      .filter((month) =>
+        Object.prototype.hasOwnProperty.call(record, month)
+      )
+      .map((month, monthIndex) => ({
+        id: `${recordIndex + 1}-${monthIndex + 1}`,
+        consumer_id: purokNo,
+        reading_date: `${record.year}-${String(
+          MONTHS.indexOf(month) + 1
+        ).padStart(2, "0")}-01`,
+        previous_reading: 0,
+        present_reading: toNumber(record[month]),
+        consumption: toNumber(record[month]),
+        consumers: {
+          id: purokNo,
+          full_name: `E2E Consumer ${purokNo}`,
+          purok_no: purokNo,
+        },
+      }));
+  });
+
 // Common consumption query
 const fetchConsumptionRecords = async () => {
+  if (usesInMemoryData()) {
+    return getInMemoryConsumptionRecords();
+  }
+
   const { data, error } = await supabase
     .from("consumption")
     .select(`

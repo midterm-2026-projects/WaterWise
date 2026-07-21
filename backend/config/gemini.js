@@ -10,9 +10,11 @@ export const GEMINI_MODELS = [
   "gemini-2.0-flash-lite",
 ];
 
-export const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+export const ai = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    })
+  : null;
 
 export const isGeminiConfigured = () => {
   return Boolean(process.env.GEMINI_API_KEY);

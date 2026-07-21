@@ -24,6 +24,10 @@ app.use(
 app.disable("x-powered-by");
 app.use(express.json());
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.use("/api/auth", authRoutes);
 app.use(billingRoutes);
 app.use(consumerRoutes);
