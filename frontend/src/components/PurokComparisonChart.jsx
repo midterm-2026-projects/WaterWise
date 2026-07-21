@@ -250,7 +250,8 @@ function PurokComparisonChart({
   const hasConsumption = chartData.some((item) => Number(item.consumption) > 0);
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section data-testid="purok-comparison-chart"
+    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">

@@ -65,7 +65,8 @@ function ConsumptionRankingSection() {
   };
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section data-testid="consumption-ranking-section"
+    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -119,6 +120,7 @@ function ConsumptionRankingSection() {
           {ranking.map((item, index) => (
             <div
               key={item.purok}
+              data-testid="ranking-row"
               className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-sky-200 hover:bg-sky-50"
             >
               <div className="flex items-center gap-4">

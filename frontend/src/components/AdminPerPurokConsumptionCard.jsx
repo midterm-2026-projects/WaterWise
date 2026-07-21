@@ -72,6 +72,7 @@ function AdminPerPurokConsumptionCard() {
 
   return (
     <div
+    data-testid="purok-consumption-card"
       className="
 group
 relative
