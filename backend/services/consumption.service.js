@@ -414,6 +414,28 @@ export const getPerPurokMonthlyHistory = (
   );
 };
 
+// Purok Yearly History
+export const getPerPurokYearlyHistory = (
+  purok
+) => {
+  const records = getPurokPredictionData();
+
+  return records
+    .filter(
+      (record) => record.purok === purok
+    )
+    .sort((a, b) => a.year - b.year)
+    .map((record) => ({
+      year: record.year,
+      consumption:
+        getConsumptionFields(record).reduce(
+          (sum, month) =>
+            sum + record[month],
+          0
+        ),
+    }));
+};
+
 // All Puroks Monthly History
 export const getAllPuroksMonthlyHistory =
   () => {
@@ -437,6 +459,62 @@ export const getAllPuroksMonthlyHistory =
             })
           ),
       }));
+  };
+
+// All Puroks Yearly History
+  export const getAllPuroksYearlyHistory =
+  () => {
+    const records = getPurokPredictionData();
+
+    const puroks = [
+      ...new Set(
+        records.map(
+          (record) => record.purok
+        )
+      ),
+    ];
+
+    return puroks.map((purok) => ({
+      purok,
+      historical: records
+        .filter(
+          (record) =>
+            record.purok === purok
+        )
+        .sort((a, b) => a.year - b.year)
+        .map((record) => ({
+          year: record.year,
+          consumption:
+            getConsumptionFields(record).reduce(
+              (sum, month) =>
+                sum + record[month],
+              0
+            ),
+        })),
+    }));
+  };
+
+// Generate All History Consumption
+  export const getAllHistoryConsumption =
+  () => {
+    const overallMonthly =
+      getOverallMonthlyHistory();
+
+    const overallYearly =
+      getOverallYearlyHistory();
+
+    const allPuroksMonthly =
+      getAllPuroksMonthlyHistory();
+
+    const allPuroksYearly =
+      getAllPuroksYearlyHistory();
+
+    return {
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    };
   };
 
 // New prediction function
@@ -554,3 +632,134 @@ Return ONLY JSON.
   return await generatePrediction(prompt);
 
 };
+
+// Per Purok Yearly Prediction
+export const generatePerPurokYearlyPrediction =
+async (purok) => {
+
+  const historical =
+    getPerPurokYearlyHistory(
+      purok
+    );
+
+  const prompt = `
+Purok
+
+${purok}
+
+Historical yearly consumption
+
+${JSON.stringify(historical)}
+
+Predict ONLY the NEXT year.
+
+Return ONLY JSON.
+
+{
+ "purok":"${purok}",
+ "predictedConsumption":number
+}
+`;
+
+  return await generatePrediction(prompt);
+
+};
+
+// All Puroks Monthly Prediction
+export const generateAllPuroksMonthlyPrediction =
+async () => {
+
+  const historical =
+    getAllPuroksMonthlyHistory();
+
+  const prompt = `
+Historical monthly consumption of every purok
+
+${JSON.stringify(historical)}
+
+Predict the NEXT month's consumption
+for every purok.
+
+Return ONLY JSON.
+
+[
+ {
+   "purok":"Purok 1",
+   "predictedConsumption":number
+ }
+]
+`;
+
+  return await generatePrediction(prompt);
+
+};
+
+// All Puroks Yearly Prediction
+export const generateAllPuroksYearlyPrediction =
+async () => {
+
+  const historical =
+    getAllPuroksYearlyHistory();
+
+  const prompt = `
+Historical yearly consumption of every purok
+
+${JSON.stringify(historical)}
+
+Predict the NEXT year's consumption
+for every purok.
+
+Return ONLY JSON.
+
+[
+ {
+   "purok":"Purok 1",
+   "predictedConsumption":number
+ }
+]
+`;
+
+  return await generatePrediction(prompt);
+
+};
+
+// Generate All Predictions
+export const generateAllPredictionsService =
+  async () => {
+    const [
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    ] = await Promise.all([
+      generateOverallMonthlyPrediction(),
+      generateOverallYearlyPrediction(),
+      generateAllPuroksMonthlyPrediction(),
+      generateAllPuroksYearlyPrediction(),
+    ]);
+
+    return {
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    };
+  };
+
+//   // check Gemini Models
+
+//   export const listGeminiModels = async () => {
+//   const models = [];
+
+//   const response = await ai.models.list();
+
+//   for await (const model of response) {
+//     models.push({
+//       name: model.name,
+//       displayName: model.displayName,
+//       description: model.description,
+//     });
+//   }
+
+//   return models;
+// };

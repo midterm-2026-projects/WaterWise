@@ -8,6 +8,9 @@ import consumptionRoutes from "./routes/consumption.routes.js";
 import consumptionHistoryRoutes from "./routes/consumptionHistory.routes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
+import anomaly from "./routes/anomalyRoutes.js";
+import recomendationRoutes from "./routes/recommendationRoutes.js";
+
 const app = express();
 
 app.disable("x-powered-by");
@@ -19,6 +22,9 @@ app.use(consumerRoutes);
 app.use(notificationRoutes);
 app.use("/api/consumption", consumptionRoutes);
 app.use("/api/consumption", consumptionHistoryRoutes);
+
+app.use(anomaly);
+app.use(recomendationRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
