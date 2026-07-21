@@ -80,5 +80,14 @@ describe('notificationService', () => {
       expect(result.errorType).toBe('NOT_FOUND');
       expect(result.data.error).toBe('Not Found');
     });
+
+    it('keeps a deleted notification out of subsequent account loads', async () => {
+      const result = await notificationService.deleteForUser('unit-alert-bill', 'user-alpha');
+      const reloaded = await notificationService.getUserNotifications('user-alpha');
+
+      expect(result.data.deleted).toBe(true);
+      expect(reloaded.streams.accountBills).toHaveLength(0);
+      expect(reloaded.streams.adminAnnouncements).toHaveLength(1);
+    });
   });
 });

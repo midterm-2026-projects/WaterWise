@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function PaymentForm({ onSubmit = () => {} }) {
   const initialState = {
@@ -10,37 +10,16 @@ function PaymentForm({ onSubmit = () => {} }) {
   };
 
   const [form, setForm] = useState(initialState);
-  const [remainingBalance, setRemainingBalance] =
-    useState(0);
-  const [paymentStatus, setPaymentStatus] =
-    useState("Unpaid");
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const balance =
-      Number(form.currentBalance) || 0;
-
-    const paid =
-      Number(form.amountPaid) || 0;
-
-    const remaining = Math.max(
-      balance - paid,
-      0
-    );
-
-    setRemainingBalance(remaining);
-
-    if (paid <= 0) {
-      setPaymentStatus("Unpaid");
-    } else if (paid >= balance) {
-      setPaymentStatus("Paid");
-    } else {
-      setPaymentStatus("Partially Paid");
-    }
-  }, [
-    form.currentBalance,
-    form.amountPaid,
-  ]);
+  const balance = Number(form.currentBalance) || 0;
+  const paid = Number(form.amountPaid) || 0;
+  const remainingBalance = Math.max(balance - paid, 0);
+  const paymentStatus = paid <= 0
+    ? "Unpaid"
+    : paid >= balance
+      ? "Paid"
+      : "Partially Paid";
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -120,8 +99,6 @@ function PaymentForm({ onSubmit = () => {} }) {
     });
 
     setForm(initialState);
-    setRemainingBalance(0);
-    setPaymentStatus("Unpaid");
     setErrors({});
   };
 

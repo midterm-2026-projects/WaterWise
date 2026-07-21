@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const initialForm = {
   consumerNo: "",
@@ -10,37 +10,30 @@ const initialForm = {
   status: "Recorded",
 };
 
-const MeterReadingForm = ({
+function initialFormFor(selectedReading) {
+  if (!selectedReading) return initialForm;
+
+  return {
+    consumerNo: selectedReading.consumerNo,
+    consumerName: selectedReading.consumerName,
+    purok: selectedReading.purok,
+    previousReading: selectedReading.previousReading,
+    currentReading: selectedReading.currentReading,
+    readingDate: selectedReading.readingDate,
+    status: selectedReading.status,
+  };
+}
+
+const MeterReadingFormFields = ({
   onSave,
   selectedReading,
   onCancel,
 }) => {
   const [formData, setFormData] =
-    useState(initialForm);
+    useState(() => initialFormFor(selectedReading));
 
   const [errors, setErrors] =
     useState({});
-
-  useEffect(() => {
-    if (selectedReading) {
-      setFormData({
-        consumerNo:
-          selectedReading.consumerNo,
-        consumerName:
-          selectedReading.consumerName,
-        purok: selectedReading.purok,
-        previousReading:
-          selectedReading.previousReading,
-        currentReading:
-          selectedReading.currentReading,
-        readingDate:
-          selectedReading.readingDate,
-        status: selectedReading.status,
-      });
-    } else {
-      setFormData(initialForm);
-    }
-  }, [selectedReading]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -376,5 +369,12 @@ const MeterReadingForm = ({
     </form>
   );
 };
+
+const MeterReadingForm = (props) => (
+  <MeterReadingFormFields
+    key={props.selectedReading?.id ?? "new-reading"}
+    {...props}
+  />
+);
 
 export default MeterReadingForm;
