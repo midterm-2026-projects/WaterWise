@@ -27,6 +27,8 @@ const ROLE_CONFIG = {
       { label: "Billings", path: "/admin/billings", Icon: FiFileText },
       { label: "Events", path: "/admin/events", Icon: FiMap },
       { label: "Announcements", path: "/admin/announcements", Icon: FiMessageSquare },
+      { label: "Analytics", path: "/admin/analytics", Icon: FiGrid },
+      
     ],
   },
   "meter-reader": {
@@ -50,6 +52,7 @@ const ROLE_CONFIG = {
       { label: "Usage Metrics", path: "/consumer/usage-metrics", Icon: FiDroplet },
       { label: "Billing Ledger", path: "/consumer/billing-ledger", Icon: FiFileText },
       { label: "Profile Details", path: "/consumer/profile-details", Icon: FiUsers },
+      { label: "Analytics", path: "/admin/analytics", Icon: FiGrid },
     ],
   },
 };

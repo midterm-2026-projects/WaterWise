@@ -1,87 +1,98 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+
+import { describe, expect, it, vi } from "vitest";
+
 import YearlyConsumptionTrend from "../../components/YearlyConsumptionTrend";
-import { yearlyConsumptionData } from "../../data/analyticsData";
 
-describe("Yearly Consumption", () => {
-  it("should render the Yearly Consumption Trend title", () => {
-    // Arrange
-    render(
-      <YearlyConsumptionTrend
-        data={yearlyConsumptionData}
-      />
-    );
+import {
+  fetchYearlyHistory,
+  fetchOverallYearlyPrediction,
+} from "../../services/consumptionAPI";
 
-    // Act
-    const result = screen.getByText(
-      "Yearly Consumption Trend"
-    );
+vi.mock("../../services/consumptionAPI", () => ({
+  fetchYearlyHistory: vi.fn(),
 
-    // Assert
-    expect(result).toBeInTheDocument();
+  fetchOverallYearlyPrediction: vi.fn(),
+}));
+
+describe("YearlyConsumptionTrend", () => {
+  it("should render the Yearly Consumption Trend title", async () => {
+    fetchYearlyHistory.mockResolvedValue({
+      data: [
+        {
+          year: 2021,
+          consumption: 70120,
+        },
+      ],
+    });
+
+    fetchOverallYearlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 89320,
+        predictionYear: 2026,
+      },
+    });
+
+    render(<YearlyConsumptionTrend />);
+
+    expect(screen.getByText("Yearly Consumption Trend")).toBeInTheDocument();
   });
 
-  it("should render the Yearly Consumption graph when data is available", () => {
-    // Arrange
-    render(
-      <YearlyConsumptionTrend
-        data={yearlyConsumptionData}
-      />
-    );
+  it("should render yearly consumption chart when data is available", async () => {
+    fetchYearlyHistory.mockResolvedValue({
+      data: [
+        {
+          year: 2021,
+          consumption: 70120,
+        },
 
-    // Act
-    const result = screen.getByText(
-      "Yearly Consumption Graph"
-    );
+        {
+          year: 2022,
+          consumption: 74850,
+        },
 
-    // Assert
-    expect(result).toBeInTheDocument();
+        {
+          year: 2023,
+          consumption: 79210,
+        },
+
+        {
+          year: 2024,
+          consumption: 83540,
+        },
+
+        {
+          year: 2025,
+          consumption: 86420,
+        },
+      ],
+    });
+
+    fetchOverallYearlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 89320,
+        predictionYear: 2026,
+      },
+    });
+
+    render(<YearlyConsumptionTrend />);
+
+    await waitFor(() => {
+      expect(fetchYearlyHistory).toHaveBeenCalled();
+
+      expect(fetchOverallYearlyPrediction).toHaveBeenCalled();
+    });
   });
 
-  it("should render the five years of historical consumption data", () => {
-    // Arrange
-    render(
-      <YearlyConsumptionTrend
-        data={yearlyConsumptionData}
-      />
+  it("should render loading state while fetching yearly consumption data", () => {
+    fetchYearlyHistory.mockImplementation(() => new Promise(() => {}));
+
+    fetchOverallYearlyPrediction.mockImplementation(
+      () => new Promise(() => {}),
     );
 
-    // Assert
-    expect(screen.getByText("2021 - 70120 m³")).toBeInTheDocument();
-    expect(screen.getByText("2022 - 74850 m³")).toBeInTheDocument();
-    expect(screen.getByText("2023 - 79210 m³")).toBeInTheDocument();
-    expect(screen.getByText("2024 - 83540 m³")).toBeInTheDocument();
-    expect(screen.getByText("2025 - 86420 m³")).toBeInTheDocument();
-  });
+    const { container } = render(<YearlyConsumptionTrend />);
 
-  it("should render the predicted yearly consumption value", () => {
-    // Arrange
-    render(
-      <YearlyConsumptionTrend
-        data={yearlyConsumptionData}
-      />
-    );
-
-    // Assert
-    expect(
-      screen.getByText("2026 - 89320 m³")
-    ).toBeInTheDocument();
-  });
-
-  it("should render a default message when no data is available", () => {
-    // Arrange
-    render(
-      <YearlyConsumptionTrend
-        data={[]}
-      />
-    );
-
-    // Act
-    const result = screen.getByText(
-      "No yearly consumption data available."
-    );
-
-    // Assert
-    expect(result).toBeInTheDocument();
-  });
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+  })
 });

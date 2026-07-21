@@ -1,3 +1,5 @@
+// backend/services/anomaly.service.js
+
 import {
   ai,
   GEMINI_MODELS,
@@ -13,438 +15,883 @@ import {
   getAllPuroksYearlyHistory,
 } from "./consumption.service.js";
 
-// Gemini Helper Function
-const generateAnomalyAnalysis = async (
-  prompt
+const VALID_STATUSES = [
+  "NORMAL",
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL",
+];
+
+const toNumber = (value) => {
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
+};
+
+const clampRiskScore = (value) => {
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(toNumber(value))
+    )
+  );
+};
+
+const normalizeStatus = (status) => {
+  const normalizedStatus =
+    String(status ?? "NORMAL")
+      .trim()
+      .toUpperCase();
+
+  return VALID_STATUSES.includes(
+    normalizedStatus
+  )
+    ? normalizedStatus
+    : "NORMAL";
+};
+
+const createNormalResult = (
+  purok = undefined
 ) => {
-  if (!isGeminiConfigured()) {
-    throw new Error(
-      "Gemini API key is not configured."
-    );
-  }
-
-  let lastError;
-
-  for (const model of GEMINI_MODELS) {
-    try {
-      console.log(`Trying model: ${model}`);
-
-      const response =
-        await ai.models.generateContent({
-          model,
-          contents: prompt,
-        });
-
-      console.log(`Success using ${model}`);
-
-      return JSON.parse(response.text);
-    } catch (error) {
-      console.warn(
-        `Model ${model} failed`
-      );
-
-      lastError = error;
-    }
-  }
-
-  throw lastError;
-};
-
-// Overall Monthly Anomaly
-export const generateOverallMonthlyAnomaly =
-async () => {
-  const historical =
-    getOverallMonthlyHistory();
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Analyze the historical monthly water consumption.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If no anomaly exists:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-{
-  "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-  "hasAnomaly":true,
-  "riskScore":84,
-  "summary":"",
-  "anomalies":[
-    {
-      "period":"",
-      "actualConsumption":0,
-      "expectedConsumption":0,
-      "percentIncrease":0,
-      "reason":""
-    }
-  ]
-}
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// Overall Yearly Anomaly
-export const generateOverallYearlyAnomaly =
-async () => {
-  const historical =
-    getOverallYearlyHistory();
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Analyze the historical yearly water consumption.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If no anomaly exists:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-{
-  "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-  "hasAnomaly":true,
-  "riskScore":84,
-  "summary":"",
-  "anomalies":[
-    {
-      "period":"",
-      "actualConsumption":0,
-      "expectedConsumption":0,
-      "percentIncrease":0,
-      "reason":""
-    }
-  ]
-}
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// Per Purok Monthly Anomaly
-export const generatePerPurokMonthlyAnomaly =
-async (purok) => {
-  const historical =
-    getPerPurokMonthlyHistory(
-      purok
-    );
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Purok:
-
-${purok}
-
-Analyze the historical monthly water consumption.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If no anomaly exists:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-{
-  "purok":"${purok}",
-  "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-  "hasAnomaly":true,
-  "riskScore":84,
-  "summary":"",
-  "anomalies":[
-    {
-      "period":"",
-      "actualConsumption":0,
-      "expectedConsumption":0,
-      "percentIncrease":0,
-      "reason":""
-    }
-  ]
-}
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// Per Puroks Yearly Anomaly
-export const generatePerPurokYearlyAnomaly =
-async (purok) => {
-  const historical =
-    getPerPurokYearlyHistory(
-      purok
-    );
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Purok:
-
-${purok}
-
-Analyze the historical yearly water consumption.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If no anomaly exists:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-{
-  "purok":"${purok}",
-  "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-  "hasAnomaly":true,
-  "riskScore":84,
-  "summary":"",
-  "anomalies":[
-    {
-      "period":"",
-      "actualConsumption":0,
-      "expectedConsumption":0,
-      "percentIncrease":0,
-      "reason":""
-    }
-  ]
-}
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// All Puroks Monthly Anomaly
-export const generateAllPuroksMonthlyAnomaly =
-async () => {
-  const historical =
-    getAllPuroksMonthlyHistory();
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Analyze the historical monthly water consumption of every purok.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity for every purok.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If a purok has no anomaly:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-[
-  {
-    "purok":"Purok 1",
-    "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-    "hasAnomaly":true,
-    "riskScore":84,
-    "summary":"",
-    "anomalies":[
-      {
-        "period":"",
-        "actualConsumption":0,
-        "expectedConsumption":0,
-        "percentIncrease":0,
-        "reason":""
-      }
-    ]
-  }
-]
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// All Puroks Yearly Anomaly
-export const generateAllPuroksYearlyAnomaly =
-async () => {
-  const historical =
-    getAllPuroksYearlyHistory();
-
-  const prompt = `
-You are an AI water consumption anomaly detector.
-
-Analyze the historical yearly water consumption of every purok.
-
-Responsibilities:
-- Detect ONLY abnormal consumption spikes.
-- Ignore normal fluctuations.
-- Compare the latest trend with historical values.
-- Classify the anomaly severity for every purok.
-
-Severity Levels:
-NORMAL
-LOW
-MEDIUM
-HIGH
-CRITICAL
-
-If a purok has no anomaly:
-- status = "NORMAL"
-- hasAnomaly = false
-- riskScore = 0
-- summary should explain that no abnormal consumption was detected.
-- anomalies must be an empty array.
-
-Return ONLY valid JSON.
-
-[
-  {
-    "purok":"Purok 1",
-    "status":"NORMAL | LOW | MEDIUM | HIGH | CRITICAL",
-    "hasAnomaly":true,
-    "riskScore":84,
-    "summary":"",
-    "anomalies":[
-      {
-        "period":"",
-        "actualConsumption":0,
-        "expectedConsumption":0,
-        "percentIncrease":0,
-        "reason":""
-      }
-    ]
-  }
-]
-
-Historical Data:
-
-${JSON.stringify(historical)}
-`;
-
-  return await generateAnomalyAnalysis(
-    prompt
-  );
-};
-
-// All Anomalies
-export const generateAllAnomaliesService =
-async () => {
-
-  const [
-    overallMonthly,
-    overallYearly,
-    allPuroksMonthly,
-    allPuroksYearly,
-  ] = await Promise.all([
-    generateOverallMonthlyAnomaly(),
-    generateOverallYearlyAnomaly(),
-    generateAllPuroksMonthlyAnomaly(),
-    generateAllPuroksYearlyAnomaly(),
-  ]);
-
-  return {
-    overallMonthly,
-    overallYearly,
-    allPuroksMonthly,
-    allPuroksYearly,
+  const result = {
+    status: "NORMAL",
+    hasAnomaly: false,
+    riskScore: 0,
+    summary:
+      "No sufficient historical consumption data was available to detect an abnormal consumption spike.",
+    anomalies: [],
   };
 
+  if (purok) {
+    result.purok = purok;
+  }
+
+  return result;
 };
+
+const cleanGeminiResponse = (
+  responseText
+) => {
+  if (
+    typeof responseText !==
+    "string"
+  ) {
+    throw new Error(
+      "Gemini returned an invalid response."
+    );
+  }
+
+  return responseText
+    .trim()
+    .replace(
+      /^```(?:json)?\s*/i,
+      ""
+    )
+    .replace(
+      /\s*```$/,
+      ""
+    )
+    .trim();
+};
+
+const parseGeminiResponse = (
+  responseText
+) => {
+  const cleanedResponse =
+    cleanGeminiResponse(
+      responseText
+    );
+
+  try {
+    return JSON.parse(
+      cleanedResponse
+    );
+  } catch {
+    throw new Error(
+      `Gemini returned invalid JSON: ${cleanedResponse}`
+    );
+  }
+};
+
+const normalizeAnomalyItem = (
+  anomaly
+) => {
+  return {
+    period: String(
+      anomaly?.period ?? ""
+    ),
+    actualConsumption:
+      Math.max(
+        0,
+        toNumber(
+          anomaly
+            ?.actualConsumption
+        )
+      ),
+    expectedConsumption:
+      Math.max(
+        0,
+        toNumber(
+          anomaly
+            ?.expectedConsumption
+        )
+      ),
+    percentIncrease:
+      Math.max(
+        0,
+        toNumber(
+          anomaly
+            ?.percentIncrease
+        )
+      ),
+    reason: String(
+      anomaly?.reason ?? ""
+    ),
+  };
+};
+
+const normalizeAnomalyResult = (
+  result,
+  purok = undefined
+) => {
+  const anomalies =
+    Array.isArray(
+      result?.anomalies
+    )
+      ? result.anomalies.map(
+          normalizeAnomalyItem
+        )
+      : [];
+
+  const status =
+    normalizeStatus(
+      result?.status
+    );
+
+  const hasAnomaly =
+    status !== "NORMAL" &&
+    anomalies.length > 0;
+
+  const normalizedResult = {
+    status:
+      hasAnomaly
+        ? status
+        : "NORMAL",
+
+    hasAnomaly,
+
+    riskScore:
+      hasAnomaly
+        ? clampRiskScore(
+            result?.riskScore
+          )
+        : 0,
+
+    summary: String(
+      result?.summary ??
+        (
+          hasAnomaly
+            ? "An abnormal water consumption spike was detected."
+            : "No abnormal water consumption spike was detected."
+        )
+    ),
+
+    anomalies:
+      hasAnomaly
+        ? anomalies
+        : [],
+  };
+
+  if (purok) {
+    normalizedResult.purok =
+      purok;
+  }
+
+  return normalizedResult;
+};
+
+const hasHistoricalData = (
+  historical
+) => {
+  return (
+    Array.isArray(historical) &&
+    historical.length > 0
+  );
+};
+
+// Gemini helper
+const generateAnomalyAnalysis =
+  async (prompt) => {
+    if (
+      !isGeminiConfigured()
+    ) {
+      throw new Error(
+        "Gemini API key is not configured."
+      );
+    }
+
+    let lastError = null;
+
+    for (
+      const model of
+      GEMINI_MODELS
+    ) {
+      try {
+        console.log(
+          `Trying Gemini model: ${model}`
+        );
+
+        const response =
+          await ai.models
+            .generateContent({
+              model,
+              contents: prompt,
+            });
+
+        const responseText =
+          typeof response.text ===
+          "function"
+            ? response.text()
+            : response.text;
+
+        const parsedResponse =
+          parseGeminiResponse(
+            responseText
+          );
+
+        console.log(
+          `Gemini anomaly analysis succeeded using: ${model}`
+        );
+
+        return parsedResponse;
+      } catch (error) {
+        console.warn(
+          `Gemini model ${model} failed:`,
+          error.message
+        );
+
+        lastError = error;
+      }
+    }
+
+    throw (
+      lastError ??
+      new Error(
+        "All Gemini models failed."
+      )
+    );
+  };
+
+// ==========================================
+// OVERALL MONTHLY ANOMALY
+// ==========================================
+
+export const generateOverallMonthlyAnomaly =
+  async () => {
+    const historical =
+      await getOverallMonthlyHistory();
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createNormalResult();
+    }
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Analyze the supplied overall monthly water consumption history.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare recent consumption against earlier consumption.
+- Do not report decreases as spike anomalies.
+- Classify the anomaly severity accurately.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- If no abnormal spike exists, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- actualConsumption and expectedConsumption must be non-negative numbers.
+- percentIncrease must be a non-negative number.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
+
+Expected format:
+
+{
+  "status": "NORMAL",
+  "hasAnomaly": false,
+  "riskScore": 0,
+  "summary": "",
+  "anomalies": [
+    {
+      "period": "",
+      "actualConsumption": 0,
+      "expectedConsumption": 0,
+      "percentIncrease": 0,
+      "reason": ""
+    }
+  ]
+}
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    return normalizeAnomalyResult(
+      result
+    );
+  };
+
+// ==========================================
+// OVERALL YEARLY ANOMALY
+// ==========================================
+
+export const generateOverallYearlyAnomaly =
+  async () => {
+    const historical =
+      await getOverallYearlyHistory();
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createNormalResult();
+    }
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Analyze the supplied overall yearly water consumption history.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare the latest yearly consumption against earlier years.
+- Do not report decreases as spike anomalies.
+- Classify the anomaly severity accurately.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- If no abnormal spike exists, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations outside the JSON.
+
+Expected format:
+
+{
+  "status": "NORMAL",
+  "hasAnomaly": false,
+  "riskScore": 0,
+  "summary": "",
+  "anomalies": [
+    {
+      "period": "",
+      "actualConsumption": 0,
+      "expectedConsumption": 0,
+      "percentIncrease": 0,
+      "reason": ""
+    }
+  ]
+}
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    return normalizeAnomalyResult(
+      result
+    );
+  };
+
+// ==========================================
+// PER-PUROK MONTHLY ANOMALY
+// ==========================================
+
+export const generatePerPurokMonthlyAnomaly =
+  async (purok) => {
+    if (!purok) {
+      throw new Error(
+        "Purok is required."
+      );
+    }
+
+    const historical =
+      await getPerPurokMonthlyHistory(
+        purok
+      );
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createNormalResult(
+        purok
+      );
+    }
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Purok:
+${purok}
+
+Analyze the supplied monthly water consumption history for this purok.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare recent consumption against earlier consumption.
+- Do not report decreases as spike anomalies.
+- Classify the anomaly severity accurately.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- Preserve the supplied purok name exactly.
+- If no abnormal spike exists, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations outside the JSON.
+
+Expected format:
+
+{
+  "purok": "${purok}",
+  "status": "NORMAL",
+  "hasAnomaly": false,
+  "riskScore": 0,
+  "summary": "",
+  "anomalies": [
+    {
+      "period": "",
+      "actualConsumption": 0,
+      "expectedConsumption": 0,
+      "percentIncrease": 0,
+      "reason": ""
+    }
+  ]
+}
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    return normalizeAnomalyResult(
+      result,
+      purok
+    );
+  };
+
+// ==========================================
+// PER-PUROK YEARLY ANOMALY
+// ==========================================
+
+export const generatePerPurokYearlyAnomaly =
+  async (purok) => {
+    if (!purok) {
+      throw new Error(
+        "Purok is required."
+      );
+    }
+
+    const historical =
+      await getPerPurokYearlyHistory(
+        purok
+      );
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createNormalResult(
+        purok
+      );
+    }
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Purok:
+${purok}
+
+Analyze the supplied yearly water consumption history for this purok.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare the latest yearly consumption against earlier years.
+- Do not report decreases as spike anomalies.
+- Classify the anomaly severity accurately.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- Preserve the supplied purok name exactly.
+- If no abnormal spike exists, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations outside the JSON.
+
+Expected format:
+
+{
+  "purok": "${purok}",
+  "status": "NORMAL",
+  "hasAnomaly": false,
+  "riskScore": 0,
+  "summary": "",
+  "anomalies": [
+    {
+      "period": "",
+      "actualConsumption": 0,
+      "expectedConsumption": 0,
+      "percentIncrease": 0,
+      "reason": ""
+    }
+  ]
+}
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    return normalizeAnomalyResult(
+      result,
+      purok
+    );
+  };
+
+// ==========================================
+// ALL-PUROKS MONTHLY ANOMALY
+// ==========================================
+
+export const generateAllPuroksMonthlyAnomaly =
+  async () => {
+    const historical =
+      await getAllPuroksMonthlyHistory();
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return [];
+    }
+
+    const expectedPuroks =
+      historical
+        .map(
+          (item) =>
+            item.purok
+        )
+        .filter(Boolean);
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Analyze the supplied monthly water consumption history for every purok.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare recent consumption against earlier consumption.
+- Do not report decreases as spike anomalies.
+- Classify anomaly severity separately for every purok.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- Return exactly one result for every supplied purok.
+- Preserve every supplied purok name exactly.
+- If a purok has no abnormal spike, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include explanations outside the JSON.
+
+Expected format:
+
+[
+  {
+    "purok": "Purok 1",
+    "status": "NORMAL",
+    "hasAnomaly": false,
+    "riskScore": 0,
+    "summary": "",
+    "anomalies": [
+      {
+        "period": "",
+        "actualConsumption": 0,
+        "expectedConsumption": 0,
+        "percentIncrease": 0,
+        "reason": ""
+      }
+    ]
+  }
+]
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini monthly anomaly analysis must return an array."
+      );
+    }
+
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return expectedPuroks.map(
+      (purok) => {
+        const anomalyResult =
+          resultMap.get(purok);
+
+        if (!anomalyResult) {
+          return createNormalResult(
+            purok
+          );
+        }
+
+        return normalizeAnomalyResult(
+          anomalyResult,
+          purok
+        );
+      }
+    );
+  };
+
+// ==========================================
+// ALL-PUROKS YEARLY ANOMALY
+// ==========================================
+
+export const generateAllPuroksYearlyAnomaly =
+  async () => {
+    const historical =
+      await getAllPuroksYearlyHistory();
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return [];
+    }
+
+    const expectedPuroks =
+      historical
+        .map(
+          (item) =>
+            item.purok
+        )
+        .filter(Boolean);
+
+    const prompt = `
+You are an AI water consumption anomaly detector.
+
+Analyze the supplied yearly water consumption history for every purok.
+
+Historical data:
+${JSON.stringify(historical)}
+
+Responsibilities:
+- Detect only abnormal increases or consumption spikes.
+- Ignore normal fluctuations.
+- Compare the latest yearly consumption against earlier years.
+- Do not report decreases as spike anomalies.
+- Classify anomaly severity separately for every purok.
+
+Severity levels:
+NORMAL
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Rules:
+- Return exactly one result for every supplied purok.
+- Preserve every supplied purok name exactly.
+- If a purok has no abnormal spike, use status "NORMAL".
+- If status is "NORMAL", hasAnomaly must be false.
+- If status is "NORMAL", riskScore must be 0.
+- If status is "NORMAL", anomalies must be an empty array.
+- riskScore must be between 0 and 100.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include explanations outside the JSON.
+
+Expected format:
+
+[
+  {
+    "purok": "Purok 1",
+    "status": "NORMAL",
+    "hasAnomaly": false,
+    "riskScore": 0,
+    "summary": "",
+    "anomalies": [
+      {
+        "period": "",
+        "actualConsumption": 0,
+        "expectedConsumption": 0,
+        "percentIncrease": 0,
+        "reason": ""
+      }
+    ]
+  }
+]
+`;
+
+    const result =
+      await generateAnomalyAnalysis(
+        prompt
+      );
+
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini yearly anomaly analysis must return an array."
+      );
+    }
+
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return expectedPuroks.map(
+      (purok) => {
+        const anomalyResult =
+          resultMap.get(purok);
+
+        if (!anomalyResult) {
+          return createNormalResult(
+            purok
+          );
+        }
+
+        return normalizeAnomalyResult(
+          anomalyResult,
+          purok
+        );
+      }
+    );
+  };
+
+// ==========================================
+// GENERATE ALL ANOMALIES
+// ==========================================
+
+export const generateAllAnomaliesService =
+  async () => {
+    const [
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    ] = await Promise.all([
+      generateOverallMonthlyAnomaly(),
+      generateOverallYearlyAnomaly(),
+      generateAllPuroksMonthlyAnomaly(),
+      generateAllPuroksYearlyAnomaly(),
+    ]);
+
+    return {
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    };
+  };

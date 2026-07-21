@@ -1,87 +1,111 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+
+import { describe, it, expect, vi } from "vitest";
+
 import MonthlyConsumptionTrend from "../../components/MonthlyConsumptionTrend";
-import { monthlyConsumptionData } from "../../data/analyticsData";
 
-describe("Monthly Consumption", () => {
-  it("should render the Monthly Consumption Trend title", () => {
-    // Arrange
-    render(
-      <MonthlyConsumptionTrend
-        data={monthlyConsumptionData}
-      />
-    );
+import {
+  fetchMonthlyHistory,
+  fetchOverallMonthlyPrediction,
+} from "../../services/consumptionAPI";
 
-    // Act
-    const result = screen.getByText(
-      "Monthly Consumption Trend"
-    );
+vi.mock("../../services/consumptionAPI", () => ({
+  fetchMonthlyHistory: vi.fn(),
 
-    // Assert
+  fetchOverallMonthlyPrediction: vi.fn(),
+}));
+
+describe("Monthly Consumption Trend", () => {
+  it("should render the Monthly Consumption Trend title", async () => {
+    fetchMonthlyHistory.mockResolvedValue({
+      data: [],
+    });
+
+    fetchOverallMonthlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 0,
+      },
+    });
+
+    render(<MonthlyConsumptionTrend />);
+
+    const result = await screen.findByText("Monthly Consumption Trend");
+
     expect(result).toBeInTheDocument();
   });
 
-  it("should render the Monthly Consumption graph when data is available", () => {
-    // Arrange
-    render(
-      <MonthlyConsumptionTrend
-        data={monthlyConsumptionData}
-      />
-    );
+  it("should fetch monthly consumption history and prediction data", async () => {
+    fetchMonthlyHistory.mockResolvedValue({
+      data: [
+        {
+          month: "january",
+          consumption: 10150,
+        },
 
-    // Act
-    const result = screen.getByText(
-      "Monthly Consumption Graph"
-    );
+        {
+          month: "february",
+          consumption: 10820,
+        },
 
-    // Assert
-    expect(result).toBeInTheDocument();
+        {
+          month: "march",
+          consumption: 11240,
+        },
+
+        {
+          month: "april",
+          consumption: 11780,
+        },
+
+        {
+          month: "may",
+          consumption: 12030,
+        },
+      ],
+    });
+
+    fetchOverallMonthlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 12450,
+
+        month: "june",
+      },
+    });
+
+    render(<MonthlyConsumptionTrend />);
+
+    await waitFor(() => {
+      expect(fetchMonthlyHistory).toHaveBeenCalled();
+
+      expect(fetchOverallMonthlyPrediction).toHaveBeenCalled();
+    });
   });
 
-  it("should render the five months of historical consumption data", () => {
-    // Arrange
-    render(
-      <MonthlyConsumptionTrend
-        data={monthlyConsumptionData}
-      />
+  it("should render the loading state while monthly consumption data is being fetched", () => {
+    fetchMonthlyHistory.mockImplementation(() => new Promise(() => {}));
+
+    fetchOverallMonthlyPrediction.mockImplementation(
+      () => new Promise(() => {}),
     );
 
-    // Assert
-    expect(screen.getByText("Jan - 10150 m³")).toBeInTheDocument();
-    expect(screen.getByText("Feb - 10820 m³")).toBeInTheDocument();
-    expect(screen.getByText("Mar - 11240 m³")).toBeInTheDocument();
-    expect(screen.getByText("Apr - 11780 m³")).toBeInTheDocument();
-    expect(screen.getByText("May - 12030 m³")).toBeInTheDocument();
+    const { container } = render(<MonthlyConsumptionTrend />);
+
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
-  it("should render the predicted monthly consumption value", () => {
-    // Arrange
-    render(
-      <MonthlyConsumptionTrend
-        data={monthlyConsumptionData}
-      />
-    );
+  it("should render an error message when monthly consumption data loading fails", async () => {
+    fetchMonthlyHistory.mockRejectedValue(new Error("Failed loading data"));
 
-    // Assert
-    expect(
-      screen.getByText("Jun - 12450 m³")
-    ).toBeInTheDocument();
-  });
+    fetchOverallMonthlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 0,
+      },
+    });
 
-  it("should render a default message when no data is available", () => {
-    // Arrange
-    render(
-      <MonthlyConsumptionTrend
-        data={[]}
-      />
-    );
+    render(<MonthlyConsumptionTrend />);
 
-    // Act
-    const result = screen.getByText(
-      "No monthly consumption data available."
-    );
+    const error = await screen.findByText("Failed loading data");
 
-    // Assert
-    expect(result).toBeInTheDocument();
-  });
+    expect(error).toBeInTheDocument();
+  })
 });

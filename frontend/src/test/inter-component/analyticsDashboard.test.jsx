@@ -7,11 +7,16 @@ import {
   describe,
   expect,
   it,
+  vi,
+  beforeEach,
 } from "vitest";
 
 import {
   MemoryRouter,
 } from "react-router-dom";
+
+
+// Components
 
 import AnalyticsTitle from "../../components/AnalyticsTitle";
 
@@ -21,911 +26,775 @@ import AdminYearlyConsumptionCard from "../../components/AdminYearlyConsumptionC
 import AdminPerPurokConsumptionCard from "../../components/AdminPerPurokConsumptionCard";
 
 import AnomalyAlertCard from "../../components/AnomalyAlertCard";
+
 import ConsumptionRankingSection from "../../components/ConsumptionRankingSection";
 
 import MonthlyConsumptionTrend from "../../components/MonthlyConsumptionTrend";
 import YearlyConsumptionTrend from "../../components/YearlyConsumptionTrend";
 import PerPurokConsumptionTrend from "../../components/PerPurokConsumptionTrend";
+
 import PurokComparisonChart from "../../components/PurokComparisonChart";
 
-import RecommendationCard from "../../components/RecommendationCard";
-import RecommendationSection from "../../components/RecommendationSection";
+import AnomalyRecommendationSection from "../../components/AnomalyRecommendationSection";
 
 import Sidebar from "../../components/Sidebar";
 
+
+// Services
+
+import {
+  generateAllAnomalies,
+} from "../../services/anomalyAPI";
+
+
+import {
+  fetchAllRecommendations,
+} from "../../services/recommendationAPI";
+
+
+
+// Mock API
+
+vi.mock(
+  "../../services/anomalyAPI",
+  () => ({
+    generateAllAnomalies: vi.fn(),
+  }),
+);
+
+
+vi.mock(
+  "../../services/recommendationAPI",
+  () => ({
+    fetchAllRecommendations: vi.fn(),
+  }),
+);
+
+
+
 const renderWithRouter = (
-  component
+  component,
 ) => {
+
   return render(
     <MemoryRouter>
       {component}
-    </MemoryRouter>
+    </MemoryRouter>,
   );
+
 };
+
+
+
+beforeEach(
+  () => {
+
+    generateAllAnomalies.mockResolvedValue({
+      data: {
+        overallMonthly: {
+          summary:
+            "No anomaly detected.",
+
+          status:
+            "normal",
+        },
+      },
+    });
+
+
+    fetchAllRecommendations.mockResolvedValue({
+      data: {
+        overallMonthly: {
+          recommendations: [],
+        },
+      },
+    });
+
+  },
+);
+
+
+
+
 
 describe(
   "Analytics Dashboard Components tests",
   () => {
+
+
+
     // ==========================================
     // ANALYTICS TITLE
     // ==========================================
 
+
     describe(
       "AnalyticsTitle",
       () => {
-        const analyticsTitles = [
-          {
-            text:
-              "Analytics Dashboard",
-          },
-          {
-            text:
-              "WaterWise Intelligent Decision Support Services",
-          },
-          {
-            text:
-              "Per Purok Consumption",
-          },
-          {
-            text:
-              "Forecast water consumption across all puroks",
-          },
-        ];
 
-        it.each(
-          analyticsTitles
-        )(
-          "should render '$text'",
-          ({ text }) => {
+
+        it(
+          "should render analytics title",
+          () => {
+
+
+            // Arrange
+
             render(
-              <AnalyticsTitle />
+              <AnalyticsTitle />,
             );
+
+
+            // Assert
 
             expect(
               screen.getByText(
-                text
-              )
-            ).toBeInTheDocument();
-          }
+                "WaterWise Analytics",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+
+            expect(
+              screen.getByText(
+                "WaterWise Intelligent Decision Support Services",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
-      }
+
+
+      },
     );
 
+
+
+
+
+
     // ==========================================
-    // OVERALL CONSUMPTION CARD
+    // CONSUMPTION CARDS
     // ==========================================
+
 
     describe(
-      "AdminOverallConsumptionCard",
+      "Consumption Cards",
       () => {
-        it(
-          "should render default values",
-          () => {
-            render(
-              <AdminOverallConsumptionCard />
-            );
 
-            expect(
-              screen.getByText(
-                "Overall Consumption"
-              )
-            ).toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "0"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "No data available"
-              )
-            ).toBeInTheDocument();
-          }
-        );
 
         it(
-          "should render provided values",
+          "should render overall consumption card",
           () => {
+
+
             render(
-              <AdminOverallConsumptionCard
-                value="500 m³"
-                subtitle="June 2026"
-              />
+              <AdminOverallConsumptionCard />,
             );
 
-            expect(
-              screen.getByText(
-                "500 m³"
-              )
-            ).toBeInTheDocument();
 
             expect(
               screen.getByText(
-                "June 2026"
-              )
-            ).toBeInTheDocument();
-          }
+                "Overall Consumption",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
-      }
+
+
+
+
+        it(
+          "should render monthly prediction card",
+          async () => {
+
+
+            render(
+              <AdminMonthlyConsumptionCard />,
+            );
+
+
+            expect(
+              await screen.findByText(
+                "Overall Monthly Prediction",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
+        );
+
+
+
+
+
+        it(
+          "should render yearly prediction card",
+          async () => {
+
+
+            render(
+              <AdminYearlyConsumptionCard />,
+            );
+
+
+            expect(
+              await screen.findByText(
+                "Overall Yearly Prediction",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
+        );
+
+
+
+
+
+        it(
+          "should render per purok prediction card",
+          async () => {
+
+
+            render(
+              <AdminPerPurokConsumptionCard />,
+            );
+
+
+            expect(
+              await screen.findByText(
+                "Per Purok Monthly Predicted Consumption",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
+        );
+
+
+
+      },
     );
 
-    // ==========================================
-    // MONTHLY CONSUMPTION CARD
-    // ==========================================
-
-    describe(
-      "AdminMonthlyConsumptionCard",
-      () => {
-        it(
-          "should render default values",
-          () => {
-            render(
-              <AdminMonthlyConsumptionCard />
-            );
-
-            expect(
-              screen.getByText(
-                "Monthly Consumption"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "0"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "No data available"
-              )
-            ).toBeInTheDocument();
-          }
-        );
-
-        it(
-          "should render provided values",
-          () => {
-            render(
-              <AdminMonthlyConsumptionCard
-                value="120 m³"
-                subtitle="July 2026"
-              />
-            );
-
-            expect(
-              screen.getByText(
-                "120 m³"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "July 2026"
-              )
-            ).toBeInTheDocument();
-          }
-        );
-      }
-    );
-
-    // ==========================================
-    // YEARLY CONSUMPTION CARD
-    // ==========================================
-
-    describe(
-      "AdminYearlyConsumptionCard",
-      () => {
-        it(
-          "should render default values",
-          () => {
-            render(
-              <AdminYearlyConsumptionCard />
-            );
-
-            expect(
-              screen.getByText(
-                "Yearly Consumption"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "0"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "No data available"
-              )
-            ).toBeInTheDocument();
-          }
-        );
-
-        it(
-          "should render provided values",
-          () => {
-            render(
-              <AdminYearlyConsumptionCard
-                value="1800 m³"
-                subtitle="2026"
-              />
-            );
-
-            expect(
-              screen.getByText(
-                "1800 m³"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "2026"
-              )
-            ).toBeInTheDocument();
-          }
-        );
-      }
-    );
-
-    // ==========================================
-    // PER-PUROK CONSUMPTION CARD
-    // ==========================================
-
-    describe(
-      "AdminPerPurokConsumptionCard",
-      () => {
-        it(
-          "should render all default puroks",
-          () => {
-            render(
-              <AdminPerPurokConsumptionCard />
-            );
-
-            expect(
-              screen.getByText(
-                "Per Purok Consumption"
-              )
-            ).toBeInTheDocument();
-
-            const values =
-              screen.getAllByText(
-                "- 0"
-              );
-
-            expect(
-              values
-            ).toHaveLength(6);
-
-            for (
-              let index = 1;
-              index <= 6;
-              index += 1
-            ) {
-              expect(
-                screen.getByText(
-                  `Purok ${index}`
-                )
-              ).toBeInTheDocument();
-            }
-          }
-        );
-      }
-    );
-
-    // ==========================================
+        // ==========================================
     // ANOMALY ALERT CARD
     // ==========================================
+
 
     describe(
       "AnomalyAlertCard",
       () => {
+
+
+
         it(
           "should render default anomaly alert",
           () => {
+
+
             render(
-              <AnomalyAlertCard />
+              <AnomalyAlertCard />,
             );
 
-            expect(
-              screen.getByText(
-                "Unknown Area"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
               screen.getByText(
-                "No anomaly detected."
-              )
-            ).toBeInTheDocument();
+                "Unknown Area",
+              ),
+            )
+            .toBeInTheDocument();
+
+
 
             expect(
               screen.getByText(
-                "Severity: N/A"
-              )
-            ).toBeInTheDocument();
-          }
+                "No anomaly detected.",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+
+            expect(
+              screen.getByText(
+                "Severity: N/A",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
+
+
+
+
 
         it(
-          "should render provided anomaly data",
+          "should render provided anomaly alert",
           () => {
+
+
             render(
               <AnomalyAlertCard
+
                 area="Purok 3"
+
                 message="Unusual water consumption detected."
+
                 severity="High"
-              />
+
+              />,
             );
 
-            expect(
-              screen.getByText(
-                "Purok 3"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
               screen.getByText(
-                "Unusual water consumption detected."
-              )
-            ).toBeInTheDocument();
+                "Purok 3",
+              ),
+            )
+            .toBeInTheDocument();
+
+
 
             expect(
               screen.getByText(
-                "Severity: High"
-              )
-            ).toBeInTheDocument();
-          }
+                "Unusual water consumption detected.",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+
+          },
         );
-      }
+
+
+
+      },
     );
+
+
+
+
+
+
 
     // ==========================================
     // CONSUMPTION RANKING
     // ==========================================
 
+
     describe(
       "ConsumptionRankingSection",
       () => {
-        it(
-          "should render default ranking message",
-          () => {
-            render(
-              <ConsumptionRankingSection />
-            );
 
-            expect(
-              screen.getByText(
-                "No consumption ranking available."
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
 
         it(
-          "should render consumption ranking data",
-          () => {
+          "should render consumption ranking section",
+          async () => {
+
+
             render(
-              <ConsumptionRankingSection
-                data={[
-                  {
-                    purok:
-                      "Purok 1",
-                    consumption:
-                      300,
-                  },
-                  {
-                    purok:
-                      "Purok 2",
-                    consumption:
-                      250,
-                  },
-                ]}
-              />
+              <ConsumptionRankingSection />,
             );
 
-            expect(
-              screen.getByText(
-                "#1 Purok 1 - 300 m³"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
-              screen.getByText(
-                "#2 Purok 2 - 250 m³"
-              )
-            ).toBeInTheDocument();
-          }
+              await screen.findByText(
+                "Consumption Ranking",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
-      }
+
+
+
+      },
     );
+
+
+
+
+
+
+
 
     // ==========================================
     // MONTHLY CONSUMPTION TREND
     // ==========================================
 
+
     describe(
       "MonthlyConsumptionTrend",
       () => {
-        it(
-          "should render default message",
-          () => {
-            render(
-              <MonthlyConsumptionTrend />
-            );
 
-            expect(
-              screen.getByText(
-                "No monthly consumption data available."
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
 
         it(
-          "should render monthly consumption data",
+          "should render monthly consumption trend",
           () => {
+
+
             render(
-              <MonthlyConsumptionTrend
-                data={[
-                  {
-                    month:
-                      "January",
-                    consumption:
-                      100,
-                  },
-                ]}
-              />
+              <MonthlyConsumptionTrend />,
             );
 
-            expect(
-              screen.getByText(
-                "Monthly Consumption Graph"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
               screen.getByText(
-                "January - 100 m³"
-              )
-            ).toBeInTheDocument();
-          }
+                "Monthly Consumption Trend",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
-      }
+
+
+      },
     );
+
+
+
+
+
+
+
 
     // ==========================================
     // YEARLY CONSUMPTION TREND
     // ==========================================
 
+
     describe(
       "YearlyConsumptionTrend",
       () => {
-        it(
-          "should render default message",
-          () => {
-            render(
-              <YearlyConsumptionTrend />
-            );
 
-            expect(
-              screen.getByText(
-                "No yearly consumption data available."
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
 
         it(
-          "should render yearly consumption data",
+          "should render yearly consumption trend",
           () => {
+
+
             render(
-              <YearlyConsumptionTrend
-                data={[
-                  {
-                    year:
-                      "2026",
-                    consumption:
-                      1200,
-                  },
-                ]}
-              />
+              <YearlyConsumptionTrend />,
             );
 
-            expect(
-              screen.getByText(
-                "Yearly Consumption Graph"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
               screen.getByText(
-                "2026 - 1200 m³"
-              )
-            ).toBeInTheDocument();
-          }
+                "Yearly Consumption Trend",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
         );
-      }
+
+
+      },
     );
 
+
+
+
+
+
+
+
     // ==========================================
-    // PER-PUROK CONSUMPTION TREND
+    // PER PUROK CONSUMPTION TREND
     // ==========================================
+
 
     describe(
       "PerPurokConsumptionTrend",
       () => {
-        it(
-          "should render the section title",
-          () => {
-            render(
-              <PerPurokConsumptionTrend />
-            );
 
-            expect(
-              screen.getByText(
-                "Per Purok Consumption Trend"
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
 
         it(
-          "should render monthly purok consumption data",
+          "should render per purok consumption trend",
           () => {
+
+
             render(
-              <PerPurokConsumptionTrend
-                data={{
-                  "Purok 1": {
-                    monthly: [
-                      {
-                        month:
-                          "January",
-                        consumption:
-                          120,
-                      },
-                      {
-                        month:
-                          "February",
-                        consumption:
-                          150,
-                      },
-                    ],
-                    yearly: [],
-                  },
-                }}
-              />
+              <PerPurokConsumptionTrend />,
             );
 
-            expect(
-              screen.getByText(
-                "Purok 1 Water Consumption Forecast"
-              )
-            ).toBeInTheDocument();
+
 
             expect(
               screen.getByText(
-                "5 Months Historical Consumption with 1-Month Predicted Demand"
-              )
-            ).toBeInTheDocument();
+                "Per Purok Consumption Trend",
+              ),
+            )
+            .toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "Consumption Graph"
-              )
-            ).toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "January - 120 m³"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "February - 150 m³"
-              )
-            ).toBeInTheDocument();
-          }
+          },
         );
 
-        it(
-          "should render yearly purok consumption data",
-          () => {
-            render(
-              <PerPurokConsumptionTrend
-                view="yearly"
-                data={{
-                  "Purok 1": {
-                    monthly: [],
-                    yearly: [
-                      {
-                        year:
-                          "2025",
-                        consumption:
-                          1400,
-                      },
-                      {
-                        year:
-                          "2026",
-                        consumption:
-                          1600,
-                      },
-                    ],
-                  },
-                }}
-              />
-            );
 
-            expect(
-              screen.getByText(
-                "5 Years Historical Consumption with 1-Year Predicted Demand"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "2025 - 1400 m³"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "2026 - 1600 m³"
-              )
-            ).toBeInTheDocument();
-          }
-        );
-      }
+      },
     );
+
+
+
+
+
+
+
 
     // ==========================================
     // PUROK COMPARISON CHART
     // ==========================================
 
+
     describe(
-      "PurokComparisonChart",
+  "PurokComparisonChart",
+  () => {
+
+
+    it(
+      "should render purok comparison chart",
       () => {
-        it(
-          "should render default message",
-          () => {
-            render(
-              <PurokComparisonChart />
-            );
 
-            expect(
-              screen.getByText(
-                "No purok comparison data available."
-              )
-            ).toBeInTheDocument();
-          }
+        render(
+          <PurokComparisonChart />
         );
 
-        it(
-          "should render comparison data",
-          () => {
-            render(
-              <PurokComparisonChart
-                data={[
-                  {
-                    purok:
-                      "Purok 1",
-                    consumption:
-                      300,
-                  },
-                ]}
-              />
-            );
 
-            expect(
-              screen.getByText(
-                "Monthly Comparison Bar Chart"
-              )
-            ).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            "Purok Comparison Chart"
+          )
+        )
+        .toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "Purok 1 - 300 m³"
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
       }
     );
 
+
+  }
+);
+
+        // ==========================================
+    // ANOMALY RECOMMENDATION SECTION
     // ==========================================
-    // RECOMMENDATION CARD
-    // ==========================================
+
 
     describe(
-      "RecommendationCard",
+      "AnomalyRecommendationSection",
       () => {
-        it(
-          "should render default values",
-          () => {
-            render(
-              <RecommendationCard />
-            );
 
-            expect(
-              screen.getByText(
-                "No Title"
-              )
-            ).toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "No description available."
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "Priority: N/A"
-              )
-            ).toBeInTheDocument();
-          }
-        );
 
         it(
-          "should render provided values",
-          () => {
+          "should render AI analysis section",
+          async () => {
+
+
             render(
-              <RecommendationCard
-                title="Monitor Consumption"
-                description="Review recent water consumption records."
-                priority="Medium"
-              />
+              <AnomalyRecommendationSection />,
             );
 
+
+
             expect(
-              screen.getByText(
-                "Monitor Consumption"
-              )
-            ).toBeInTheDocument();
+              await screen.findByText(
+                "AI Analysis",
+              ),
+            )
+            .toBeInTheDocument();
+
+
 
             expect(
               screen.getByText(
-                "Review recent water consumption records."
-              )
-            ).toBeInTheDocument();
+                "AI Recommendations",
+              ),
+            )
+            .toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "Priority: Medium"
-              )
-            ).toBeInTheDocument();
-          }
+
+          },
         );
-      }
+
+
+
+
+
+        it(
+          "should render overall monthly analysis label",
+          async () => {
+
+
+            render(
+              <AnomalyRecommendationSection
+
+                type="overallMonthly"
+
+              />,
+            );
+
+
+
+            expect(
+              await screen.findByText(
+                "Overall Monthly Consumption",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
+        );
+
+
+
+
+
+        it(
+          "should render purok monthly analysis label",
+          async () => {
+
+
+            render(
+              <AnomalyRecommendationSection
+
+                type="purokMonthly"
+
+                purok="Purok 1"
+
+              />,
+            );
+
+
+
+            expect(
+              await screen.findByText(
+                "Purok 1 Monthly Consumption",
+              ),
+            )
+            .toBeInTheDocument();
+
+
+          },
+        );
+
+
+
+      },
     );
 
+
+
+
+
+
+
+
     // ==========================================
-    // RECOMMENDATION SECTION
+    // SIDEBAR
     // ==========================================
+
 
     describe(
-      "RecommendationSection",
+      "Sidebar",
       () => {
-        it(
-          "should render default message",
-          () => {
-            render(
-              <RecommendationSection />
-            );
 
-            expect(
-              screen.getByText(
-                "No recommendations or anomaly alerts available."
-              )
-            ).toBeInTheDocument();
-          }
-        );
+
 
         it(
-          "should render recommendation and anomaly alert data",
+          "should render sidebar without crashing",
           () => {
-            render(
-              <RecommendationSection
-                recommendations={[
-                  {
-                    title:
-                      "Reduce Consumption",
-                    description:
-                      "Monitor high water usage.",
-                    priority:
-                      "High",
-                  },
-                ]}
-                anomalyAlerts={[
-                  {
-                    area:
-                      "Purok 3",
-                    message:
-                      "Unusual water consumption detected.",
-                    severity:
-                      "High",
-                  },
-                ]}
-              />
-            );
+
+
+            const {
+              container,
+            } =
+              renderWithRouter(
+                <Sidebar />,
+              );
+
+
 
             expect(
-              screen.getByText(
-                "Reduce Consumption"
-              )
-            ).toBeInTheDocument();
+              container.firstChild,
+            )
+            .toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "Monitor high water usage."
-              )
-            ).toBeInTheDocument();
 
-            expect(
-              screen.getByText(
-                "Priority: High"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "Purok 3"
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "Unusual water consumption detected."
-              )
-            ).toBeInTheDocument();
-
-            expect(
-              screen.getByText(
-                "Severity: High"
-              )
-            ).toBeInTheDocument();
-          }
+          },
         );
-      }
+
+
+
+
+
+        it(
+          "should render sidebar content",
+          () => {
+
+
+            const {
+              container,
+            } =
+              renderWithRouter(
+                <Sidebar />,
+              );
+
+
+
+            expect(
+              container.textContent,
+            )
+            .toBeDefined();
+
+
+
+            expect(
+              container.firstElementChild,
+            )
+            .not
+            .toBeNull();
+
+
+          },
+        );
+
+
+
+      },
     );
 
-    // ==========================================
-// SIDEBAR
-// ==========================================
 
-describe("Sidebar", () => {
-  it("should render without crashing", () => {
-    // Arrange
-    const { container } =
-      renderWithRouter(
-        <Sidebar />
-      );
 
-    // Assert
-    expect(
-      container.firstChild
-    ).toBeInTheDocument();
-  });
-
-  it("should render sidebar content", () => {
-    // Arrange
-    const { container } =
-      renderWithRouter(
-        <Sidebar />
-      );
-
-    // Assert
-    expect(
-      container.textContent
-    ).toBeDefined();
-
-    expect(
-      container.firstElementChild
-    ).not.toBeNull();
-  });
-});
-  });
+  },
+)

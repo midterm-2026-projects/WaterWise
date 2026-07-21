@@ -12,8 +12,8 @@ if (process.env.CI !== 'true') {
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_KEY;
 const usesInMemoryData =
-  process.env.NODE_ENV === 'test' || process.env.WATERWISE_E2E === 'true';
-
+  process.env.NODE_ENV === 'test' || process.env.WATERWISE_E2E === 'true' || process.env.WATERWISE_E2E === '1';
+  
 if ((!supabaseUrl || !supabaseKey) && !usesInMemoryData) {
   throw new Error('Missing Supabase configuration environment variables.');
 }

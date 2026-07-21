@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 
 import authRoutes from "./routes/AuthRoutes.js";
 import billingRoutes from "./routes/billingRoutes.js";
@@ -13,6 +14,13 @@ import recomendationRoutes from "./routes/recommendationRoutes.js";
 
 const app = express();
 
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
 app.disable("x-powered-by");
 app.use(express.json());
 
@@ -23,8 +31,15 @@ app.use(notificationRoutes);
 app.use("/api/consumption", consumptionRoutes);
 app.use("/api/consumption", consumptionHistoryRoutes);
 
-app.use(anomaly);
-app.use(recomendationRoutes);
+app.use(
+  "/api/anomaly",
+  anomaly
+);
+
+app.use(
+  "/api/recommendation",
+  recomendationRoutes
+);
 
 const PORT = Number(process.env.PORT) || 5000;
 
