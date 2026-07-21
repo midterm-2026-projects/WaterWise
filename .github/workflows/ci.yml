@@ -16,8 +16,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ─────────────────────────────────────────────
+  # 1. BACKEND
+  # ─────────────────────────────────────────────
   backend-tests:
-    name: Backend tests
+    name: Backend Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -52,9 +55,11 @@ jobs:
           path: backend/coverage
           if-no-files-found: ignore
           retention-days: 7
-
+  # ─────────────────────────────────────────────
+  # 2. FRONTEND
+  # ─────────────────────────────────────────────
   frontend-tests:
-    name: Frontend unit tests and build
+    name: Frontend Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
