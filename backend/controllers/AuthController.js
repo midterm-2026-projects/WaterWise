@@ -33,6 +33,13 @@ export const login = async (
 
   } catch(error) {
 
+    if (error.code === "AUTH_DATABASE_ERROR") {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to connect to the account database.",
+      });
+    }
+
 
     res.status(401).json({
 

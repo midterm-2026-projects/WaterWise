@@ -90,15 +90,7 @@ export function generateBillingRecord({
   );
 }
 
-export function processPayment(
-  billingId,
-  amount
-) {
-  const billing =
-    fetchBillingRecordById(
-      billingId
-    );
-
+function applyPayment(billingId, amount, billing) {
   if (!billing) {
     throw new Error(
       "Billing record not found."
@@ -177,8 +169,21 @@ export function processPayment(
   );
 }
 
-export function fetchAllBilling() {
-  return fetchBillingRecords();
+export function processPayment(
+  billingId,
+  amount
+) {
+  const billing = fetchBillingRecordById(billingId);
+
+  if (billing && typeof billing.then === "function") {
+    return billing.then((record) => applyPayment(billingId, amount, record));
+  }
+
+  return applyPayment(billingId, amount, billing);
+}
+
+export function fetchAllBilling(userId) {
+  return fetchBillingRecords(userId);
 }
 
 export function fetchBilling(id) {
