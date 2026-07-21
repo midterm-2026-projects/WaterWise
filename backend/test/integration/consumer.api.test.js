@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { clearSession, loginUser } from "../../services/AuthService.js";
 
 const { getProfile } = vi.hoisted(() => ({
   getProfile: vi.fn(),
@@ -21,15 +20,13 @@ vi.mock("../../routes/consumption.routes.js", async () => {
 import app from "../../app.js";
 
 describe("Consumer API - GET /api/profile", () => {
-  beforeEach(async () => {
-    clearSession();
-    await loginUser({ email: "tenant@gmail.com", password: "tenant123" });
+  beforeEach(() => {
     getProfile.mockReset();
   });
 
   it("returns the authenticated consumer profile", async () => {
     const profile = {
-      id: 2,
+      id: "owner-uuid-101",
       name: "Iverene",
       email: "iverene@example.com",
       purok: "Purok 1",

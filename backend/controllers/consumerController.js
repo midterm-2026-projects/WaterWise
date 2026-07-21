@@ -1,8 +1,11 @@
 import { consumerService } from '../services/consumerService.js';
+import { getCurrentUser } from '../services/AuthService.js';
 
 export const getProfile = async (req, res) => {
   try {
-    const profile = await consumerService.getProfile(req.user.id);
+    const user = req.user ?? await getCurrentUser();
+    const profileId = user.id;
+    const profile = await consumerService.getProfile(profileId);
 
     return res.status(200).json(profile);
   } catch (error) {

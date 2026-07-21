@@ -3,18 +3,7 @@ import {
   updateBillingRecord,
 } from "../models/billing.model.js";
 
-export function recordPayment({
-  billingId,
-  amount,
-  paymentDate = new Date()
-    .toISOString()
-    .split("T")[0],
-}) {
-  const billing =
-    fetchBillingRecordById(
-      billingId
-    );
-
+function applyPayment(billingId, amount, paymentDate, billing) {
   if (!billing) {
     throw new Error(
       "Billing record not found."
@@ -77,6 +66,22 @@ export function recordPayment({
       status,
     }
   );
+}
+
+export function recordPayment({
+  billingId,
+  amount,
+  paymentDate = new Date()
+    .toISOString()
+    .split("T")[0],
+}) {
+  const billing = fetchBillingRecordById(billingId);
+
+  if (billing && typeof billing.then === "function") {
+    return billing.then((record) => applyPayment(billingId, amount, paymentDate, record));
+  }
+
+  return applyPayment(billingId, amount, paymentDate, billing);
 }
 
 export function getPaymentHistory() {

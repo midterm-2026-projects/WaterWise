@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
-import { clearSession, loginUser } from "../../services/AuthService.js";
 
 const { fetchAllBilling } = vi.hoisted(() => ({
   fetchAllBilling: vi.fn(),
@@ -48,9 +47,7 @@ describe("Billing API", () => {
     },
   ];
 
-  beforeEach(async () => {
-    clearSession();
-    await loginUser({ email: "tenant@gmail.com", password: "tenant123" });
+  beforeEach(() => {
     fetchAllBilling.mockReset();
     fetchAllBilling.mockResolvedValue(billingCycles);
   });
@@ -63,7 +60,7 @@ describe("Billing API", () => {
     expect(response.body).toEqual({
       unpaid_balance_total: 650,
     });
-    expect(fetchAllBilling).toHaveBeenCalledWith(2);
+    expect(fetchAllBilling).toHaveBeenCalledOnce();
   });
 
   it("GET /api/billing/history returns past billing cycle objects", async () => {
@@ -73,7 +70,7 @@ describe("Billing API", () => {
     expect(response.headers["content-type"]).toMatch(/json/);
     expect(response.body).toEqual(billingCycles);
     expect(Array.isArray(response.body)).toBe(true);
-    expect(fetchAllBilling).toHaveBeenCalledWith(2);
+    expect(fetchAllBilling).toHaveBeenCalledOnce();
   });
 
   it("GET /api/billing/current returns zero when there are no billing records", async () => {

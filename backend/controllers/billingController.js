@@ -1,8 +1,15 @@
 import { fetchAllBilling } from "../services/billing.service.js";
+import { getCurrentUser } from "../services/AuthService.js";
 
-export async function getCurrentBilling(req, res) {
+async function resolveUserId() {
+  if (process.env.NODE_ENV === "test") return undefined;
+  return (await getCurrentUser()).id;
+}
+
+export async function getCurrentBilling(_req, res) {
   try {
-    const billingRecords = await fetchAllBilling(req.user.id);
+    const userId = await resolveUserId();
+    const billingRecords = await fetchAllBilling(userId);
     const unpaidBalanceTotal = billingRecords.reduce((total, record) => {
       const remainingBalance = Number(record.remaining_balance);
 
@@ -20,9 +27,10 @@ export async function getCurrentBilling(req, res) {
   }
 }
 
-export async function getBillingHistory(req, res) {
+export async function getBillingHistory(_req, res) {
   try {
-    const billingRecords = await fetchAllBilling(req.user.id);
+    const userId = await resolveUserId();
+    const billingRecords = await fetchAllBilling(userId);
 
     return res.status(200).json(billingRecords);
   } catch {

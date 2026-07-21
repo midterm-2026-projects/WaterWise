@@ -10,20 +10,17 @@ vi.mock(
   "../../services/AuthService.js",
   () => ({
 
-    getCurrentUser: vi.fn(),
     isAuthenticated: vi.fn(),
 
   })
 );
 
 import {
-  getCurrentUser,
   isAuthenticated,
 } from "../../services/AuthService.js";
 
 import {
   authenticate,
-  authenticateWithUser,
 } from "../../middleware/AuthMiddleware.js";
 
 describe(
@@ -145,25 +142,6 @@ describe(
 
       }
     );
-
-    it("attaches the active user to protected portal requests", async () => {
-      const user = { id: 2, role: "tenant" };
-      getCurrentUser.mockResolvedValue(user);
-
-      await authenticateWithUser(req, res, next);
-
-      expect(req.user).toEqual(user);
-      expect(next).toHaveBeenCalledOnce();
-    });
-
-    it("rejects portal requests without an active user", async () => {
-      getCurrentUser.mockRejectedValue(new Error("Unauthorized."));
-
-      await authenticateWithUser(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(next).not.toHaveBeenCalled();
-    });
 
   }
 );

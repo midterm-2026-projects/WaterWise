@@ -414,20 +414,6 @@ export const getPerPurokMonthlyHistory = (
   );
 };
 
-// Purok Yearly History
-export const getPerPurokYearlyHistory = (purok) => {
-  return getPurokPredictionData()
-    .filter((record) => record.purok === purok)
-    .sort((a, b) => a.year - b.year)
-    .map((record) => ({
-      year: record.year,
-      consumption: getConsumptionFields(record).reduce(
-        (total, month) => total + record[month],
-        0
-      ),
-    }));
-};
-
 // All Puroks Monthly History
 export const getAllPuroksMonthlyHistory =
   () => {
@@ -452,24 +438,6 @@ export const getAllPuroksMonthlyHistory =
           ),
       }));
   };
-
-// All Puroks Yearly History
-export const getAllPuroksYearlyHistory = () => {
-  const records = getPurokPredictionData();
-  const puroks = [...new Set(records.map((record) => record.purok))];
-
-  return puroks.map((purok) => ({
-    purok,
-    historical: getPerPurokYearlyHistory(purok),
-  }));
-};
-
-export const getAllHistoryConsumption = () => ({
-  overallMonthly: getOverallMonthlyHistory(),
-  overallYearly: getOverallYearlyHistory(),
-  perPurokMonthly: getAllPuroksMonthlyHistory(),
-  perPurokYearly: getAllPuroksYearlyHistory(),
-});
 
 // New prediction function
 
@@ -585,50 +553,4 @@ Return ONLY JSON.
 
   return await generatePrediction(prompt);
 
-};
-
-export const generatePerPurokYearlyPrediction = async (purok) => {
-  const historical = getPerPurokYearlyHistory(purok);
-  const prompt = `
-Purok: ${purok}
-
-Historical yearly consumption:
-${JSON.stringify(historical)}
-
-Predict ONLY the NEXT year and return ONLY JSON:
-{"purok":"${purok}","predictedConsumption":number}
-`;
-
-  return generatePrediction(prompt);
-};
-
-export const generateAllPuroksMonthlyPrediction = async () => {
-  const puroks = getAllPuroksMonthlyHistory().map((record) => record.purok);
-  return Promise.all(puroks.map(generatePerPurokMonthlyPrediction));
-};
-
-export const generateAllPuroksYearlyPrediction = async () => {
-  const puroks = getAllPuroksYearlyHistory().map((record) => record.purok);
-  return Promise.all(puroks.map(generatePerPurokYearlyPrediction));
-};
-
-export const generateAllPredictionsService = async () => {
-  const [
-    overallMonthly,
-    overallYearly,
-    perPurokMonthly,
-    perPurokYearly,
-  ] = await Promise.all([
-    generateOverallMonthlyPrediction(),
-    generateOverallYearlyPrediction(),
-    generateAllPuroksMonthlyPrediction(),
-    generateAllPuroksYearlyPrediction(),
-  ]);
-
-  return {
-    overallMonthly,
-    overallYearly,
-    perPurokMonthly,
-    perPurokYearly,
-  };
 };

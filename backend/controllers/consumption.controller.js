@@ -9,18 +9,11 @@ import {
   getOverallMonthlyHistory,
   getOverallYearlyHistory,
   getPerPurokMonthlyHistory,
-  getPerPurokYearlyHistory,
   getAllPuroksMonthlyHistory as getAllPuroksMonthlyHistoryService,
-  getAllPuroksYearlyHistory as getAllPuroksYearlyHistoryService,
-  getAllHistoryConsumption,
 
   generateOverallMonthlyPrediction,
   generateOverallYearlyPrediction,
   generatePerPurokMonthlyPrediction,
-  generatePerPurokYearlyPrediction,
-  generateAllPuroksMonthlyPrediction,
-  generateAllPuroksYearlyPrediction,
-  generateAllPredictionsService,
 
   // listGeminiModels,
 } from "../services/consumption.service.js";

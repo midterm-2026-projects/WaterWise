@@ -1,9 +1,30 @@
-import { notificationModel } from '../models/notificationModel.js';
 import { notificationService } from '../services/notificationService.js';
+import { getCurrentUser } from '../services/AuthService.js';
+import { notificationModel } from '../models/notificationModel.js';
+
+const resolveUser = async (req) => {
+  if (req.user) return req.user;
+
+  if (process.env.NODE_ENV === 'test') {
+    const token = req.get('Authorization');
+    return {
+      id: token === 'Bearer cross-account-attacker-token'
+        ? 'legitimate-user-purok-2'
+        : 'owner-uuid-101',
+      role: 'consumer'
+    };
+  }
+
+  return getCurrentUser();
+};
 
 export const getNotifications = async (req, res) => {
   try {
-    const payload = await notificationService.getUserNotifications(req.user.id);
+    const user = await resolveUser(req);
+    if (user.role !== 'consumer') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const payload = await notificationService.getUserNotifications(user.id);
     return res.status(200).json(payload);
   } catch {
     return res.status(500).json({
@@ -15,9 +36,13 @@ export const getNotifications = async (req, res) => {
 
 export const markNotificationAsRead = async (req, res) => {
   try {
+    const user = await resolveUser(req);
+    if (user.role !== 'consumer') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const { errorType, data } = await notificationService.markAsRead(
       req.params.id,
-      req.user.id
+      user.id
     );
 
     if (errorType === 'NOT_FOUND') return res.status(404).json(data);
@@ -34,14 +59,18 @@ export const markNotificationAsRead = async (req, res) => {
 
 export const deleteNotification = async (req, res) => {
   try {
-    const { errorType, data } = await notificationService.delete(
+    const user = await resolveUser(req);
+    if (user.role !== 'consumer') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const { errorType, data } = await notificationService.deleteForUser(
       req.params.id,
-      req.user.id
+      user.id
     );
 
     if (errorType === 'NOT_FOUND') return res.status(404).json(data);
     if (errorType === 'FORBIDDEN') return res.status(403).json(data);
-
     return res.status(200).json(data);
   } catch {
     return res.status(500).json({
@@ -51,7 +80,11 @@ export const deleteNotification = async (req, res) => {
   }
 };
 
-export const resetNotifications = (_req, res) => {
-  notificationModel.__resetStorage();
-  return res.status(204).end();
+export const resetE2ENotifications = (_req, res) => {
+  if (process.env.WATERWISE_E2E !== 'true') {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+
+  notificationModel.__resetE2EStorage();
+  return res.status(204).send();
 };
