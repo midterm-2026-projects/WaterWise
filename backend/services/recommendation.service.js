@@ -13,342 +13,702 @@ import {
   getAllPuroksYearlyHistory,
 } from "./consumption.service.js";
 
-const generateRecommendations = async (
-  prompt
-) => {
+// ==========================================
+// HELPERS
+// ==========================================
 
-  if (!isGeminiConfigured()) {
+const cleanGeminiResponse = (
+  responseText
+) => {
+  if (
+    typeof responseText !==
+    "string"
+  ) {
     throw new Error(
-      "Gemini API key is not configured."
+      "Gemini returned an invalid response."
     );
   }
 
-  let lastError;
+  return responseText
+    .trim()
+    .replace(
+      /^```(?:json)?\s*/i,
+      ""
+    )
+    .replace(
+      /\s*```$/,
+      ""
+    )
+    .trim();
+};
 
-  for (const model of GEMINI_MODELS) {
+const parseGeminiResponse = (
+  responseText
+) => {
+  const cleanedResponse =
+    cleanGeminiResponse(
+      responseText
+    );
 
-    try {
+  try {
+    return JSON.parse(
+      cleanedResponse
+    );
+  } catch {
+    throw new Error(
+      `Gemini returned invalid JSON: ${cleanedResponse}`
+    );
+  }
+};
 
-      console.log(`Trying model: ${model}`);
+const hasHistoricalData = (
+  historical
+) => {
+  return (
+    Array.isArray(historical) &&
+    historical.length > 0
+  );
+};
 
-      const response =
-        await ai.models.generateContent({
-          model,
-          contents: prompt,
-        });
+const createEmptyRecommendation =
+  (purok = undefined) => {
+    const result = {
+      summary:
+        "No sufficient historical consumption data is available to generate recommendations.",
+      recommendations: [],
+    };
 
-      console.log(`Success using ${model}`);
+    if (purok) {
+      result.purok = purok;
+    }
 
-      return JSON.parse(response.text);
+    return result;
+  };
 
-    } catch (error) {
+const normalizeRecommendation =
+  (recommendation) => {
+    return {
+      title: String(
+        recommendation?.title ??
+          ""
+      ).trim(),
 
-      console.warn(
-        `Model ${model} failed`
+      description: String(
+        recommendation
+          ?.description ?? ""
+      ).trim(),
+    };
+  };
+
+const normalizeRecommendationResult =
+  (
+    result,
+    purok = undefined
+  ) => {
+    const recommendations =
+      Array.isArray(
+        result?.recommendations
+      )
+        ? result.recommendations
+            .slice(0, 3)
+            .map(
+              normalizeRecommendation
+            )
+            .filter(
+              (item) =>
+                item.title ||
+                item.description
+            )
+        : [];
+
+    const normalizedResult = {
+      summary: String(
+        result?.summary ??
+          "No recommendation summary was provided."
+      ).trim(),
+
+      recommendations,
+    };
+
+    if (purok) {
+      normalizedResult.purok =
+        purok;
+    }
+
+    return normalizedResult;
+  };
+
+// ==========================================
+// GEMINI HELPER
+// ==========================================
+
+const generateRecommendations =
+  async (prompt) => {
+    if (
+      !isGeminiConfigured()
+    ) {
+      throw new Error(
+        "Gemini API key is not configured."
+      );
+    }
+
+    let lastError = null;
+
+    for (
+      const model of
+      GEMINI_MODELS
+    ) {
+      try {
+        console.log(
+          `Trying Gemini model: ${model}`
+        );
+
+        const response =
+          await ai.models
+            .generateContent({
+              model,
+              contents: prompt,
+            });
+
+        const responseText =
+          typeof response.text ===
+          "function"
+            ? response.text()
+            : response.text;
+
+        const parsedResponse =
+          parseGeminiResponse(
+            responseText
+          );
+
+        console.log(
+          `Recommendation generation succeeded using: ${model}`
+        );
+
+        return parsedResponse;
+      } catch (error) {
+        console.warn(
+          `Gemini model ${model} failed: ${error.message}`
+        );
+
+        lastError = error;
+      }
+    }
+
+    throw (
+      lastError ??
+      new Error(
+        "All Gemini models failed."
+      )
+    );
+  };
+
+// ==========================================
+// OVERALL MONTHLY
+// ==========================================
+
+export const generateOverallMonthlyRecommendations =
+  async () => {
+    const historical =
+      await getOverallMonthlyHistory();
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createEmptyRecommendation();
+    }
+
+    const prompt = `
+You are an AI decision support assistant for a water utility administrator.
+
+Historical monthly water consumption:
+
+${JSON.stringify(historical)}
+
+Generate only practical and actionable administrative recommendations based on the observed consumption trend.
+
+Rules:
+- Base every recommendation only on the supplied historical data.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If consumption remains stable, recommend routine monitoring and continued observation.
+- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations.
+- Keep every recommendation concise, practical, and actionable.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
+
+Expected format:
+
+{
+  "summary": "",
+  "recommendations": [
+    {
+      "title": "",
+      "description": ""
+    }
+  ]
+}
+`;
+
+    const result =
+      await generateRecommendations(
+        prompt
       );
 
-      lastError = error;
+    return normalizeRecommendationResult(
+      result
+    );
+  };
 
-    }
+// ==========================================
+// OVERALL YEARLY
+// ==========================================
 
-  }
-
-  throw lastError;
-
-};
-
-// Overall Monthly
-export const generateOverallMonthlyRecommendations =
-async () => {
-  const historical =
-    getOverallMonthlyHistory();
-
-  const prompt = `
-You are an AI decision support assistant for a water utility administrator.
-
-Historical monthly water consumption:
-
-${JSON.stringify(historical)}
-
-Generate ONLY practical and actionable administrative recommendations based on the observed consumption trend.
-
-Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If consumption remains stable, recommend routine monitoring and continuous observation.
-- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations.
-- Keep every recommendation concise, practical, and actionable.
-
-Return ONLY valid JSON.
-
-{
-  "summary":"",
-  "recommendations":[
-    {
-      "title":"",
-      "description":""
-    }
-  ]
-}
-`;
-
-  return await generateRecommendations(
-    prompt
-  );
-};
-
-
-// Overall Yearly
 export const generateOverallYearlyRecommendations =
-async () => {
-  const historical =
-    getOverallYearlyHistory();
+  async () => {
+    const historical =
+      await getOverallYearlyHistory();
 
-  const prompt = `
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createEmptyRecommendation();
+    }
+
+    const prompt = `
 You are an AI decision support assistant for a water utility administrator.
 
 Historical yearly water consumption:
 
 ${JSON.stringify(historical)}
 
-Generate ONLY practical and actionable administrative recommendations based on the observed consumption trend.
+Generate only practical and actionable administrative recommendations based on the observed consumption trend.
 
 Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If consumption remains stable, recommend routine monitoring and continuous observation.
-- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations.
+- Base every recommendation only on the supplied historical data.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If consumption remains stable, recommend routine monitoring and continued observation.
+- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations.
 - Keep every recommendation concise, practical, and actionable.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
 
-Return ONLY valid JSON.
+Expected format:
 
 {
-  "summary":"",
-  "recommendations":[
+  "summary": "",
+  "recommendations": [
     {
-      "title":"",
-      "description":""
+      "title": "",
+      "description": ""
     }
   ]
 }
 `;
 
-  return await generateRecommendations(
-    prompt
-  );
-};
+    const result =
+      await generateRecommendations(
+        prompt
+      );
 
-// Per Purok Monthly
-export const generatePerPurokMonthlyRecommendations =
-async (purok) => {
-  const historical =
-    getPerPurokMonthlyHistory(
-      purok
+    return normalizeRecommendationResult(
+      result
     );
+  };
 
-  const prompt = `
+// ==========================================
+// PER-PUROK MONTHLY
+// ==========================================
+
+export const generatePerPurokMonthlyRecommendations =
+  async (purok) => {
+    if (!purok?.trim()) {
+      throw new Error(
+        "Purok is required."
+      );
+    }
+
+    const normalizedPurok =
+      purok.trim();
+
+    const historical =
+      await getPerPurokMonthlyHistory(
+        normalizedPurok
+      );
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createEmptyRecommendation(
+        normalizedPurok
+      );
+    }
+
+    const prompt = `
 You are an AI decision support assistant for a water utility administrator.
 
 Purok:
-
-${purok}
+${normalizedPurok}
 
 Historical monthly water consumption:
 
 ${JSON.stringify(historical)}
 
-Generate ONLY practical and actionable administrative recommendations for this purok based on the observed consumption trend.
+Generate only practical and actionable administrative recommendations for this purok based on the observed consumption trend.
 
 Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If consumption remains stable, recommend routine monitoring and continuous observation.
-- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations.
+- Base every recommendation only on the supplied historical data.
+- Preserve the supplied purok name exactly.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If consumption remains stable, recommend routine monitoring and continued observation.
+- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations.
 - Keep every recommendation concise, practical, and actionable.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
 
-Return ONLY valid JSON.
+Expected format:
 
 {
-  "purok":"${purok}",
-  "summary":"",
-  "recommendations":[
+  "purok": "${normalizedPurok}",
+  "summary": "",
+  "recommendations": [
     {
-      "title":"",
-      "description":""
+      "title": "",
+      "description": ""
     }
   ]
 }
 `;
 
-  return await generateRecommendations(
-    prompt
-  );
-};
+    const result =
+      await generateRecommendations(
+        prompt
+      );
 
-// Pe Purok Yearly
-export const generatePerPurokYearlyRecommendations =
-async (purok) => {
-  const historical =
-    getPerPurokYearlyHistory(
-      purok
+    return normalizeRecommendationResult(
+      result,
+      normalizedPurok
     );
+  };
 
-  const prompt = `
+// ==========================================
+// PER-PUROK YEARLY
+// ==========================================
+
+export const generatePerPurokYearlyRecommendations =
+  async (purok) => {
+    if (!purok?.trim()) {
+      throw new Error(
+        "Purok is required."
+      );
+    }
+
+    const normalizedPurok =
+      purok.trim();
+
+    const historical =
+      await getPerPurokYearlyHistory(
+        normalizedPurok
+      );
+
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return createEmptyRecommendation(
+        normalizedPurok
+      );
+    }
+
+    const prompt = `
 You are an AI decision support assistant for a water utility administrator.
 
 Purok:
-
-${purok}
+${normalizedPurok}
 
 Historical yearly water consumption:
 
 ${JSON.stringify(historical)}
 
-Generate ONLY practical and actionable administrative recommendations for this purok based on the observed consumption trend.
+Generate only practical and actionable administrative recommendations for this purok based on the observed consumption trend.
 
 Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If consumption remains stable, recommend routine monitoring and continuous observation.
-- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations.
+- Base every recommendation only on the supplied historical data.
+- Preserve the supplied purok name exactly.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If consumption remains stable, recommend routine monitoring and continued observation.
+- If consumption shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations.
 - Keep every recommendation concise, practical, and actionable.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
 
-Return ONLY valid JSON.
+Expected format:
 
 {
-  "purok":"${purok}",
-  "summary":"",
-  "recommendations":[
+  "purok": "${normalizedPurok}",
+  "summary": "",
+  "recommendations": [
     {
-      "title":"",
-      "description":""
+      "title": "",
+      "description": ""
     }
   ]
 }
 `;
 
-  return await generateRecommendations(
-    prompt
-  );
-};
+    const result =
+      await generateRecommendations(
+        prompt
+      );
 
-// All Puroks Monthly
+    return normalizeRecommendationResult(
+      result,
+      normalizedPurok
+    );
+  };
+
+// ==========================================
+// ALL-PUROKS MONTHLY
+// ==========================================
+
 export const generateAllPuroksMonthlyRecommendations =
-async () => {
-  const historical =
-    getAllPuroksMonthlyHistory();
+  async () => {
+    const historical =
+      await getAllPuroksMonthlyHistory();
 
-  const prompt = `
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return [];
+    }
+
+    const puroks =
+      historical
+        .map(
+          (item) => item.purok
+        )
+        .filter(Boolean);
+
+    const prompt = `
 You are an AI decision support assistant for a water utility administrator.
 
 Historical monthly water consumption for every purok:
 
 ${JSON.stringify(historical)}
 
-Generate ONLY practical and actionable administrative recommendations for every purok based on the observed consumption trends.
+Generate only practical and actionable administrative recommendations for every purok based on the observed consumption trends.
 
 Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If a purok has stable consumption, recommend routine monitoring and continuous observation.
-- If a purok shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations for each purok.
+- Base every recommendation only on the supplied historical data.
+- Return exactly one result for every supplied purok.
+- Preserve every purok name exactly.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If a purok has stable consumption, recommend routine monitoring and continued observation.
+- If a purok shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations for each purok.
 - Keep every recommendation concise, practical, and actionable.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
 
-Return ONLY valid JSON.
+Expected format:
 
 [
   {
-    "purok":"Purok 1",
-    "summary":"",
-    "recommendations":[
+    "purok": "Purok 1",
+    "summary": "",
+    "recommendations": [
       {
-        "title":"",
-        "description":""
+        "title": "",
+        "description": ""
       }
     ]
   }
 ]
 `;
 
-  return await generateRecommendations(
-    prompt
-  );
-};
+    const result =
+      await generateRecommendations(
+        prompt
+      );
 
-// All Puroks Yearly
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini monthly recommendations must return an array."
+      );
+    }
+
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return puroks.map(
+      (purok) => {
+        const recommendation =
+          resultMap.get(purok);
+
+        if (!recommendation) {
+          return createEmptyRecommendation(
+            purok
+          );
+        }
+
+        return normalizeRecommendationResult(
+          recommendation,
+          purok
+        );
+      }
+    );
+  };
+
+// ==========================================
+// ALL-PUROKS YEARLY
+// ==========================================
+
 export const generateAllPuroksYearlyRecommendations =
-async () => {
-  const historical =
-    getAllPuroksYearlyHistory();
+  async () => {
+    const historical =
+      await getAllPuroksYearlyHistory();
 
-  const prompt = `
+    if (
+      !hasHistoricalData(
+        historical
+      )
+    ) {
+      return [];
+    }
+
+    const puroks =
+      historical
+        .map(
+          (item) => item.purok
+        )
+        .filter(Boolean);
+
+    const prompt = `
 You are an AI decision support assistant for a water utility administrator.
 
 Historical yearly water consumption for every purok:
 
 ${JSON.stringify(historical)}
 
-Generate ONLY practical and actionable administrative recommendations for every purok based on the observed consumption trends.
+Generate only practical and actionable administrative recommendations for every purok based on the observed consumption trends.
 
 Rules:
-- Base your recommendations ONLY on the historical data.
-- Do NOT assume the exact cause of any increase or decrease.
-- Do NOT speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
-- If a purok has stable consumption, recommend routine monitoring and continuous observation.
-- If a purok shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming the cause.
-- Generate a maximum of 3 recommendations for each purok.
+- Base every recommendation only on the supplied historical data.
+- Return exactly one result for every supplied purok.
+- Preserve every purok name exactly.
+- Do not assume the exact cause of an increase or decrease.
+- Do not speculate about leaks, illegal connections, damaged pipes, faulty meters, weather conditions, or population growth unless directly supported by the data.
+- If a purok has stable consumption, recommend routine monitoring and continued observation.
+- If a purok shows a noticeable increase or decrease, recommend appropriate administrative actions without assuming a cause.
+- Generate no more than 3 recommendations for each purok.
 - Keep every recommendation concise, practical, and actionable.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include text outside the JSON.
 
-Return ONLY valid JSON.
+Expected format:
 
 [
   {
-    "purok":"Purok 1",
-    "summary":"",
-    "recommendations":[
+    "purok": "Purok 1",
+    "summary": "",
+    "recommendations": [
       {
-        "title":"",
-        "description":""
+        "title": "",
+        "description": ""
       }
     ]
   }
 ]
 `;
 
-  return await generateRecommendations(
-    prompt
-  );
-};
+    const result =
+      await generateRecommendations(
+        prompt
+      );
 
-// All Recommendations Service
-export const generateAllRecommendationsService =
-async () => {
-  const [
-    overallMonthly,
-    overallYearly,
-    allPuroksMonthly,
-    allPuroksYearly,
-  ] = await Promise.all([
-    generateOverallMonthlyRecommendations(),
-    generateOverallYearlyRecommendations(),
-    generateAllPuroksMonthlyRecommendations(),
-    generateAllPuroksYearlyRecommendations(),
-  ]);
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini yearly recommendations must return an array."
+      );
+    }
 
-  return {
-    overallMonthly,
-    overallYearly,
-    allPuroksMonthly,
-    allPuroksYearly,
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return puroks.map(
+      (purok) => {
+        const recommendation =
+          resultMap.get(purok);
+
+        if (!recommendation) {
+          return createEmptyRecommendation(
+            purok
+          );
+        }
+
+        return normalizeRecommendationResult(
+          recommendation,
+          purok
+        );
+      }
+    );
   };
-};
+
+// ==========================================
+// ALL RECOMMENDATIONS
+// ==========================================
+
+export const generateAllRecommendationsService =
+  async () => {
+    const [
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    ] = await Promise.all([
+      generateOverallMonthlyRecommendations(),
+      generateOverallYearlyRecommendations(),
+      generateAllPuroksMonthlyRecommendations(),
+      generateAllPuroksYearlyRecommendations(),
+    ]);
+
+    return {
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    };
+  };

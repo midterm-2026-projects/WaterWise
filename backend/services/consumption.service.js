@@ -1,3 +1,5 @@
+// backend/services/consumption.services.js
+
 import {
   ai,
   GEMINI_MODELS,
@@ -11,61 +13,120 @@ import {
   getPurokConsumptionRanking,
 } from "../models/consumption.model.js";
 
+const MONTH_ORDER = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
+const toNumber = (value) => {
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
+};
+
 const calculatePrediction = (values) => {
-  if (values.length === 0) {
+  const numericValues = values.map(toNumber);
+
+  if (numericValues.length === 0) {
     return 0;
   }
 
-  if (values.length === 1) {
-    return values[0];
+  if (numericValues.length === 1) {
+    return Math.round(
+      numericValues[0]
+    );
   }
 
   const growth =
-    (values[values.length - 1] - values[0]) /
-    (values.length - 1);
+    (
+      numericValues[
+        numericValues.length - 1
+      ] -
+      numericValues[0]
+    ) /
+    (numericValues.length - 1);
 
-  return Math.round(
-    values[values.length - 1] + growth
+  return Math.max(
+    0,
+    Math.round(
+      numericValues[
+        numericValues.length - 1
+      ] + growth
+    )
   );
 };
 
 const getConsumptionFields = (record) => {
-  return Object.keys(record).filter(
-    (key) =>
-      key !== "year" &&
-      key !== "purok"
+  return MONTH_ORDER.filter(
+    (month) =>
+      Object.prototype.hasOwnProperty.call(
+        record,
+        month
+      )
   );
 };
 
+const getRecordYearTotal = (record) => {
+  return getConsumptionFields(record)
+    .reduce(
+      (total, month) =>
+        total +
+        toNumber(record[month]),
+      0
+    );
+};
+
+// ==========================================
+// LOCAL / DETERMINISTIC PREDICTIONS
+// ==========================================
+
 // Purok Monthly Prediction
 export const generatePurokMonthlyPrediction =
-  () => {
+  async () => {
     const records =
-      getPurokPredictionData();
+      await getPurokPredictionData();
+
+    if (records.length === 0) {
+      return [];
+    }
 
     const latestYear = Math.max(
       ...records.map(
-        (record) => record.year
+        (record) =>
+          toNumber(record.year)
       )
     );
 
     const latestYearRecords =
       records.filter(
         (record) =>
-          record.year === latestYear
+          toNumber(record.year) ===
+          latestYear
       );
 
     return latestYearRecords.map(
       (record) => {
-        const fields =
-          getConsumptionFields(record);
-
         const historical =
-          fields.map((field) => ({
-            period: field,
-            consumption:
-              record[field],
-          }));
+          getConsumptionFields(record)
+            .map((month) => ({
+              period: month,
+              consumption:
+                toNumber(
+                  record[month]
+                ),
+            }));
 
         const predictedConsumption =
           calculatePrediction(
@@ -86,19 +147,24 @@ export const generatePurokMonthlyPrediction =
     );
   };
 
-
 // Purok Yearly Prediction
 export const generatePurokYearlyPrediction =
-  () => {
+  async () => {
     const records =
-      getPurokPredictionData();
+      await getPurokPredictionData();
+
+    if (records.length === 0) {
+      return [];
+    }
 
     const puroks = [
       ...new Set(
-        records.map(
-          (record) =>
-            record.purok
-        )
+        records
+          .map(
+            (record) =>
+              record.purok
+          )
+          .filter(Boolean)
       ),
     ];
 
@@ -113,29 +179,19 @@ export const generatePurokYearlyPrediction =
             )
             .sort(
               (a, b) =>
-                a.year - b.year
+                toNumber(a.year) -
+                toNumber(b.year)
             )
-            .map((record) => {
-              const totalConsumption =
-                getConsumptionFields(
+            .map((record) => ({
+              year:
+                toNumber(
+                  record.year
+                ),
+              consumption:
+                getRecordYearTotal(
                   record
-                ).reduce(
-                  (
-                    sum,
-                    field
-                  ) =>
-                    sum +
-                    record[field],
-                  0
-                );
-
-              return {
-                year:
-                  record.year,
-                consumption:
-                  totalConsumption,
-              };
-            });
+                ),
+            }));
 
         const predictedConsumption =
           calculatePrediction(
@@ -157,31 +213,41 @@ export const generatePurokYearlyPrediction =
 
 // Overall Monthly Prediction
 export const generateMonthlyPrediction =
-  () => {
+  async () => {
     const records =
-      getMonthlyBillingData();
+      await getMonthlyBillingData();
 
     const monthlyTotals = {};
 
     records.forEach((record) => {
+      if (!record.billing_date) {
+        return;
+      }
+
       const month =
-        record.billing_date.slice(
-          0,
-          7
-        );
+        String(
+          record.billing_date
+        ).slice(0, 7);
 
       monthlyTotals[month] =
-        (monthlyTotals[month] ||
-          0) +
-        record.cubic_used;
+        (
+          monthlyTotals[month] ??
+          0
+        ) +
+        toNumber(
+          record.cubic_used
+        );
     });
 
     const monthlyData =
       Object.entries(
         monthlyTotals
       )
-        .sort(([a], [b]) =>
-          a.localeCompare(b)
+        .sort(
+          ([monthA], [monthB]) =>
+            monthA.localeCompare(
+              monthB
+            )
         )
         .map(
           ([
@@ -189,9 +255,9 @@ export const generateMonthlyPrediction =
             consumption,
           ]) => ({
             month,
-            consumption,
-            predicted:
-              false,
+            consumption:
+              toNumber(consumption),
+            predicted: false,
           })
         )
         .slice(-5);
@@ -205,35 +271,33 @@ export const generateMonthlyPrediction =
     const predictedConsumption =
       Math.round(
         monthlyData.reduce(
-          (
-            total,
-            month
-          ) =>
+          (total, item) =>
             total +
-            month.consumption,
+            item.consumption,
           0
         ) /
           monthlyData.length
       );
 
-    const [
-      year,
-      month,
-    ] = monthlyData
-      .at(-1)
-      .month.split("-")
-      .map(Number);
+    const [year, month] =
+      monthlyData
+        .at(-1)
+        .month
+        .split("-")
+        .map(Number);
 
     const nextMonth =
       new Date(
-        year,
-        month,
-        1
+        Date.UTC(
+          year,
+          month,
+          1
+        )
       );
 
     monthlyData.push({
-      month: `${nextMonth.getFullYear()}-${String(
-        nextMonth.getMonth() + 1
+      month: `${nextMonth.getUTCFullYear()}-${String(
+        nextMonth.getUTCMonth() + 1
       ).padStart(2, "0")}`,
       consumption:
         predictedConsumption,
@@ -245,43 +309,50 @@ export const generateMonthlyPrediction =
 
 // Overall Yearly Prediction
 export const generateYearlyPrediction =
-  () => {
+  async () => {
     const records =
-      getYearlyBillingData();
+      await getYearlyBillingData();
 
     const yearlyTotals = {};
 
     records.forEach((record) => {
+      if (!record.billing_date) {
+        return;
+      }
+
       const year =
-        record.billing_date.slice(
-          0,
-          4
-        );
+        String(
+          record.billing_date
+        ).slice(0, 4);
 
       yearlyTotals[year] =
-        (yearlyTotals[year] ||
-          0) +
-        record.cubic_used;
+        (
+          yearlyTotals[year] ??
+          0
+        ) +
+        toNumber(
+          record.cubic_used
+        );
     });
 
     const yearlyData =
       Object.entries(
         yearlyTotals
       )
-        .sort(([a], [b]) =>
-          a.localeCompare(b)
+        .sort(
+          ([yearA], [yearB]) =>
+            Number(yearA) -
+            Number(yearB)
         )
         .map(
           ([
             year,
             consumption,
           ]) => ({
-            year: Number(
-              year
-            ),
-            consumption,
-            predicted:
-              false,
+            year: Number(year),
+            consumption:
+              toNumber(consumption),
+            predicted: false,
           })
         )
         .slice(-5);
@@ -295,12 +366,9 @@ export const generateYearlyPrediction =
     const predictedConsumption =
       Math.round(
         yearlyData.reduce(
-          (
-            total,
-            year
-          ) =>
+          (total, item) =>
             total +
-            year.consumption,
+            item.consumption,
           0
         ) /
           yearlyData.length
@@ -318,196 +386,319 @@ export const generateYearlyPrediction =
     return yearlyData;
   };
 
-// Rankings
+// ==========================================
+// CONSUMPTION RANKING
+// ==========================================
 
-export const getConsumptionRanking = () => {
-  const data = getPurokConsumptionRanking();
+export const getConsumptionRanking =
+  async () => {
+    const data =
+      await getPurokConsumptionRanking();
 
-  return [...data]
-    .sort((a, b) => b.consumption - a.consumption)
-    .map((item, index) => ({
-      rank: index + 1,
-      ...item,
-    }));
-};
+    return [...data]
+      .sort(
+        (a, b) =>
+          toNumber(
+            b.consumption
+          ) -
+          toNumber(
+            a.consumption
+          )
+      )
+      .map(
+        (item, index) => ({
+          rank: index + 1,
+          ...item,
+          consumption:
+            toNumber(
+              item.consumption
+            ),
+        })
+      );
+  };
 
-//New aggregation function
+// ==========================================
+// HISTORY AGGREGATION
+// ==========================================
 
 // Overall Monthly History
-export const getOverallMonthlyHistory = () => {
-  const records = getPurokPredictionData();
+export const getOverallMonthlyHistory =
+  async () => {
+    const records =
+      await getPurokPredictionData();
 
-  const latestYear = Math.max(
-    ...records.map((record) => record.year)
-  );
-
-  const latestRecords = records.filter(
-    (record) => record.year === latestYear
-  );
-
-  const totals = {};
-
-  latestRecords.forEach((record) => {
-    getConsumptionFields(record).forEach((month) => {
-      totals[month] =
-        (totals[month] || 0) + record[month];
-    });
-  });
-
-  return Object.entries(totals).map(
-    ([month, consumption]) => ({
-      month,
-      consumption,
-    })
-  );
-};
-
-// Overall Yearly History
-export const getOverallYearlyHistory = () => {
-  const records = getPurokPredictionData();
-
-  const yearlyTotals = {};
-
-  records.forEach((record) => {
-    const total = getConsumptionFields(record).reduce(
-      (sum, month) => sum + record[month],
-      0
-    );
-
-    yearlyTotals[record.year] =
-      (yearlyTotals[record.year] || 0) + total;
-  });
-
-  return Object.entries(yearlyTotals).map(
-    ([year, consumption]) => ({
-      year: Number(year),
-      consumption,
-    })
-  );
-};
-
-// Purok Monthly History
-export const getPerPurokMonthlyHistory = (
-  purok
-) => {
-  const records = getPurokPredictionData();
-
-  const latestYear = Math.max(
-    ...records.map((record) => record.year)
-  );
-
-  const record = records.find(
-    (item) =>
-      item.year === latestYear &&
-      item.purok === purok
-  );
-
-  if (!record) {
-    return [];
-  }
-
-  return getConsumptionFields(record).map(
-    (month) => ({
-      month,
-      consumption: record[month],
-    })
-  );
-};
-
-// Purok Yearly History
-export const getPerPurokYearlyHistory = (
-  purok
-) => {
-  const records = getPurokPredictionData();
-
-  return records
-    .filter(
-      (record) => record.purok === purok
-    )
-    .sort((a, b) => a.year - b.year)
-    .map((record) => ({
-      year: record.year,
-      consumption:
-        getConsumptionFields(record).reduce(
-          (sum, month) =>
-            sum + record[month],
-          0
-        ),
-    }));
-};
-
-// All Puroks Monthly History
-export const getAllPuroksMonthlyHistory =
-  () => {
-    const records = getPurokPredictionData();
+    if (records.length === 0) {
+      return [];
+    }
 
     const latestYear = Math.max(
-      ...records.map((record) => record.year)
+      ...records.map(
+        (record) =>
+          toNumber(record.year)
+      )
     );
 
-    return records
+    const latestRecords =
+      records.filter(
+        (record) =>
+          toNumber(record.year) ===
+          latestYear
+      );
+
+    const totals = {};
+
+    latestRecords.forEach(
+      (record) => {
+        getConsumptionFields(record)
+          .forEach((month) => {
+            totals[month] =
+              (
+                totals[month] ??
+                0
+              ) +
+              toNumber(
+                record[month]
+              );
+          });
+      }
+    );
+
+    return MONTH_ORDER
       .filter(
-        (record) => record.year === latestYear
+        (month) =>
+          Object.prototype
+            .hasOwnProperty.call(
+              totals,
+              month
+            )
       )
-      .map((record) => ({
-        purok: record.purok,
-        historical:
-          getConsumptionFields(record).map(
-            (month) => ({
-              month,
-              consumption: record[month],
-            })
+      .map((month) => ({
+        month,
+        consumption:
+          toNumber(
+            totals[month]
           ),
       }));
   };
 
-// All Puroks Yearly History
-  export const getAllPuroksYearlyHistory =
-  () => {
-    const records = getPurokPredictionData();
+// Overall Yearly History
+export const getOverallYearlyHistory =
+  async () => {
+    const records =
+      await getPurokPredictionData();
 
-    const puroks = [
-      ...new Set(
-        records.map(
-          (record) => record.purok
-        )
-      ),
-    ];
+    const yearlyTotals = {};
 
-    return puroks.map((purok) => ({
-      purok,
-      historical: records
-        .filter(
-          (record) =>
-            record.purok === purok
-        )
-        .sort((a, b) => a.year - b.year)
-        .map((record) => ({
-          year: record.year,
+    records.forEach((record) => {
+      const year =
+        toNumber(record.year);
+
+      if (!year) {
+        return;
+      }
+
+      yearlyTotals[year] =
+        (
+          yearlyTotals[year] ??
+          0
+        ) +
+        getRecordYearTotal(
+          record
+        );
+    });
+
+    return Object.entries(
+      yearlyTotals
+    )
+      .sort(
+        ([yearA], [yearB]) =>
+          Number(yearA) -
+          Number(yearB)
+      )
+      .map(
+        ([
+          year,
+          consumption,
+        ]) => ({
+          year: Number(year),
           consumption:
-            getConsumptionFields(record).reduce(
-              (sum, month) =>
-                sum + record[month],
-              0
-            ),
-        })),
+            toNumber(consumption),
+        })
+      );
+  };
+
+// Purok Monthly History
+export const getPerPurokMonthlyHistory =
+  async (purok) => {
+    const records =
+      await getPurokPredictionData();
+
+    const purokRecords =
+      records.filter(
+        (record) =>
+          record.purok === purok
+      );
+
+    if (
+      purokRecords.length === 0
+    ) {
+      return [];
+    }
+
+    const latestYear = Math.max(
+      ...purokRecords.map(
+        (record) =>
+          toNumber(record.year)
+      )
+    );
+
+    const record =
+      purokRecords.find(
+        (item) =>
+          toNumber(item.year) ===
+          latestYear
+      );
+
+    if (!record) {
+      return [];
+    }
+
+    return getConsumptionFields(
+      record
+    ).map((month) => ({
+      month,
+      consumption:
+        toNumber(
+          record[month]
+        ),
     }));
   };
 
+// Purok Yearly History
+export const getPerPurokYearlyHistory =
+  async (purok) => {
+    const records =
+      await getPurokPredictionData();
+
+    return records
+      .filter(
+        (record) =>
+          record.purok === purok
+      )
+      .sort(
+        (a, b) =>
+          toNumber(a.year) -
+          toNumber(b.year)
+      )
+      .map((record) => ({
+        year:
+          toNumber(
+            record.year
+          ),
+        consumption:
+          getRecordYearTotal(
+            record
+          ),
+      }));
+  };
+
+// All Puroks Monthly History
+export const getAllPuroksMonthlyHistory =
+  async () => {
+    const records =
+      await getPurokPredictionData();
+
+    if (records.length === 0) {
+      return [];
+    }
+
+    const latestYear = Math.max(
+      ...records.map(
+        (record) =>
+          toNumber(record.year)
+      )
+    );
+
+    return records
+      .filter(
+        (record) =>
+          toNumber(record.year) ===
+          latestYear
+      )
+      .map((record) => ({
+        purok: record.purok,
+        latestYear,
+        historical:
+          getConsumptionFields(record)
+            .map((month) => ({
+              month,
+              consumption:
+                toNumber(
+                  record[month]
+                ),
+            })),
+      }));
+  };
+
+// All Puroks Yearly History
+export const getAllPuroksYearlyHistory =
+  async () => {
+    const records =
+      await getPurokPredictionData();
+
+    const puroks = [
+      ...new Set(
+        records
+          .map(
+            (record) =>
+              record.purok
+          )
+          .filter(Boolean)
+      ),
+    ];
+
+    return puroks.map(
+      (purok) => ({
+        purok,
+        historical: records
+          .filter(
+            (record) =>
+              record.purok ===
+              purok
+          )
+          .sort(
+            (a, b) =>
+              toNumber(a.year) -
+              toNumber(b.year)
+          )
+          .map((record) => ({
+            year:
+              toNumber(
+                record.year
+              ),
+            consumption:
+              getRecordYearTotal(
+                record
+              ),
+          })),
+      })
+    );
+  };
+
 // Generate All History Consumption
-  export const getAllHistoryConsumption =
-  () => {
-    const overallMonthly =
-      getOverallMonthlyHistory();
-
-    const overallYearly =
-      getOverallYearlyHistory();
-
-    const allPuroksMonthly =
-      getAllPuroksMonthlyHistory();
-
-    const allPuroksYearly =
-      getAllPuroksYearlyHistory();
+export const getAllHistoryConsumption =
+  async () => {
+    const [
+      overallMonthly,
+      overallYearly,
+      allPuroksMonthly,
+      allPuroksYearly,
+    ] = await Promise.all([
+      getOverallMonthlyHistory(),
+      getOverallYearlyHistory(),
+      getAllPuroksMonthlyHistory(),
+      getAllPuroksYearlyHistory(),
+    ]);
 
     return {
       overallMonthly,
@@ -517,211 +708,501 @@ export const getAllPuroksMonthlyHistory =
     };
   };
 
-// New prediction function
+// ==========================================
+// GEMINI HELPERS
+// ==========================================
 
-const generatePrediction = async (prompt) => {
-  if (!isGeminiConfigured()) {
-    throw new Error("Gemini API is not configured.");
+const parseGeminiJson = (
+  responseText
+) => {
+  if (
+    typeof responseText !==
+    "string"
+  ) {
+    throw new Error(
+      "Gemini returned an invalid response."
+    );
   }
 
-  let lastError;
+  const cleanedText =
+    responseText
+      .trim()
+      .replace(
+        /^```(?:json)?\s*/i,
+        ""
+      )
+      .replace(
+        /\s*```$/,
+        ""
+      )
+      .trim();
 
-  for (const model of GEMINI_MODELS) {
-    try {
-      console.log(`Trying model: ${model}`);
-
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-      });
-
-      console.log(`Success using ${model}`);
-
-      return JSON.parse(response.text);
-    } catch (error) {
-      console.warn(`Model ${model} failed`);
-
-      lastError = error;
-    }
+  try {
+    return JSON.parse(
+      cleanedText
+    );
+  } catch {
+    throw new Error(
+      `Gemini returned invalid JSON: ${cleanedText}`
+    );
   }
-
-  throw lastError;
 };
 
+const generatePrediction =
+  async (prompt) => {
+    if (
+      !isGeminiConfigured()
+    ) {
+      throw new Error(
+        "Gemini API is not configured."
+      );
+    }
+
+    let lastError = null;
+
+    for (
+      const model of
+      GEMINI_MODELS
+    ) {
+      try {
+        console.log(
+          `Trying Gemini model: ${model}`
+        );
+
+        const response =
+          await ai.models
+            .generateContent({
+              model,
+              contents: prompt,
+            });
+
+        const responseText =
+          typeof response.text ===
+          "function"
+            ? response.text()
+            : response.text;
+
+        const parsedResponse =
+          parseGeminiJson(
+            responseText
+          );
+
+        console.log(
+          `Gemini success using: ${model}`
+        );
+
+        return parsedResponse;
+      } catch (error) {
+        console.warn(
+          `Gemini model ${model} failed:`,
+          error.message
+        );
+
+        lastError = error;
+      }
+    }
+
+    throw (
+      lastError ??
+      new Error(
+        "All Gemini models failed."
+      )
+    );
+  };
+
+// ==========================================
+// GEMINI PREDICTIONS
+// ==========================================
 
 // Overall Monthly Prediction
 export const generateOverallMonthlyPrediction =
-async () => {
+  async () => {
+    const historical =
+      await getOverallMonthlyHistory();
 
-  const historical =
-    getOverallMonthlyHistory();
+    if (
+      historical.length === 0
+    ) {
+      return {
+        predictedConsumption: 0,
+      };
+    }
 
-  const prompt = `
+    const prompt = `
 You are a water demand forecasting AI.
 
 Historical monthly water consumption:
 
 ${JSON.stringify(historical)}
 
-Predict ONLY the NEXT month.
+Predict only the next month's total water consumption.
 
-Return ONLY JSON.
+Rules:
+- Return a non-negative number.
+- Base the prediction only on the supplied history.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 {
-  "predictedConsumption": number
+  "predictedConsumption": 0
 }
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    return {
+      predictedConsumption:
+        Math.max(
+          0,
+          toNumber(
+            result.predictedConsumption
+          )
+        ),
+    };
+  };
 
 // Overall Yearly Prediction
 export const generateOverallYearlyPrediction =
-async () => {
+  async () => {
+    const historical =
+      await getOverallYearlyHistory();
 
-  const historical =
-    getOverallYearlyHistory();
+    if (
+      historical.length === 0
+    ) {
+      return {
+        predictedConsumption: 0,
+      };
+    }
 
-  const prompt = `
-Historical yearly water consumption
+    const prompt = `
+You are a water demand forecasting AI.
+
+Historical yearly water consumption:
 
 ${JSON.stringify(historical)}
 
-Predict ONLY the NEXT year.
+Predict only the next year's total water consumption.
 
-Return ONLY JSON.
+Rules:
+- Return a non-negative number.
+- Base the prediction only on the supplied history.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 {
- "predictedConsumption":number
+  "predictedConsumption": 0
 }
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    return {
+      predictedConsumption:
+        Math.max(
+          0,
+          toNumber(
+            result.predictedConsumption
+          )
+        ),
+    };
+  };
 
 // Per Purok Monthly Prediction
 export const generatePerPurokMonthlyPrediction =
-async (purok) => {
+  async (purok) => {
+    const historical =
+      await getPerPurokMonthlyHistory(
+        purok
+      );
 
-  const historical =
-    getPerPurokMonthlyHistory(
-      purok
-    );
+    if (
+      historical.length === 0
+    ) {
+      return {
+        purok,
+        predictedConsumption: 0,
+      };
+    }
 
-  const prompt = `
-Purok
+    const prompt = `
+You are a water demand forecasting AI.
+
+Purok:
 
 ${purok}
 
-Historical monthly consumption
+Historical monthly water consumption:
 
 ${JSON.stringify(historical)}
 
-Predict ONLY the NEXT month.
+Predict only the next month's water consumption for this purok.
 
-Return ONLY JSON.
+Rules:
+- Return the exact purok value supplied.
+- Return a non-negative number.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 {
- "purok":"${purok}",
- "predictedConsumption":number
+  "purok": "${purok}",
+  "predictedConsumption": 0
 }
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    return {
+      purok,
+      predictedConsumption:
+        Math.max(
+          0,
+          toNumber(
+            result.predictedConsumption
+          )
+        ),
+    };
+  };
 
 // Per Purok Yearly Prediction
 export const generatePerPurokYearlyPrediction =
-async (purok) => {
+  async (purok) => {
+    const historical =
+      await getPerPurokYearlyHistory(
+        purok
+      );
 
-  const historical =
-    getPerPurokYearlyHistory(
-      purok
-    );
+    if (
+      historical.length === 0
+    ) {
+      return {
+        purok,
+        predictedConsumption: 0,
+      };
+    }
 
-  const prompt = `
-Purok
+    const prompt = `
+You are a water demand forecasting AI.
+
+Purok:
 
 ${purok}
 
-Historical yearly consumption
+Historical yearly water consumption:
 
 ${JSON.stringify(historical)}
 
-Predict ONLY the NEXT year.
+Predict only the next year's water consumption for this purok.
 
-Return ONLY JSON.
+Rules:
+- Return the exact purok value supplied.
+- Return a non-negative number.
+- Return only valid JSON.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 {
- "purok":"${purok}",
- "predictedConsumption":number
+  "purok": "${purok}",
+  "predictedConsumption": 0
 }
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    return {
+      purok,
+      predictedConsumption:
+        Math.max(
+          0,
+          toNumber(
+            result.predictedConsumption
+          )
+        ),
+    };
+  };
 
 // All Puroks Monthly Prediction
 export const generateAllPuroksMonthlyPrediction =
-async () => {
+  async () => {
+    const historical =
+      await getAllPuroksMonthlyHistory();
 
-  const historical =
-    getAllPuroksMonthlyHistory();
+    if (
+      historical.length === 0
+    ) {
+      return [];
+    }
 
-  const prompt = `
-Historical monthly consumption of every purok
+    const expectedPuroks =
+      historical.map(
+        (item) => item.purok
+      );
+
+    const prompt = `
+You are a water demand forecasting AI.
+
+Historical monthly water consumption of every purok:
 
 ${JSON.stringify(historical)}
 
-Predict the NEXT month's consumption
-for every purok.
+Predict only the next month's consumption for every purok.
 
-Return ONLY JSON.
+Rules:
+- Return exactly one result for every supplied purok.
+- Keep the supplied purok names unchanged.
+- Each predictedConsumption must be non-negative.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 [
- {
-   "purok":"Purok 1",
-   "predictedConsumption":number
- }
+  {
+    "purok": "Purok 1",
+    "predictedConsumption": 0
+  }
 ]
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini monthly purok prediction must return an array."
+      );
+    }
+
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return expectedPuroks.map(
+      (purok) => ({
+        purok,
+        predictedConsumption:
+          Math.max(
+            0,
+            toNumber(
+              resultMap.get(
+                purok
+              )
+                ?.predictedConsumption
+            )
+          ),
+      })
+    );
+  };
 
 // All Puroks Yearly Prediction
 export const generateAllPuroksYearlyPrediction =
-async () => {
+  async () => {
+    const historical =
+      await getAllPuroksYearlyHistory();
 
-  const historical =
-    getAllPuroksYearlyHistory();
+    if (
+      historical.length === 0
+    ) {
+      return [];
+    }
 
-  const prompt = `
-Historical yearly consumption of every purok
+    const expectedPuroks =
+      historical.map(
+        (item) => item.purok
+      );
+
+    const prompt = `
+You are a water demand forecasting AI.
+
+Historical yearly water consumption of every purok:
 
 ${JSON.stringify(historical)}
 
-Predict the NEXT year's consumption
-for every purok.
+Predict only the next year's consumption for every purok.
 
-Return ONLY JSON.
+Rules:
+- Return exactly one result for every supplied purok.
+- Keep the supplied purok names unchanged.
+- Each predictedConsumption must be non-negative.
+- Return only a valid JSON array.
+- Do not use Markdown code fences.
+- Do not include explanations.
+
+Expected format:
 
 [
- {
-   "purok":"Purok 1",
-   "predictedConsumption":number
- }
+  {
+    "purok": "Purok 1",
+    "predictedConsumption": 0
+  }
 ]
 `;
 
-  return await generatePrediction(prompt);
+    const result =
+      await generatePrediction(
+        prompt
+      );
 
-};
+    if (!Array.isArray(result)) {
+      throw new Error(
+        "Gemini yearly purok prediction must return an array."
+      );
+    }
+
+    const resultMap =
+      new Map(
+        result.map((item) => [
+          item.purok,
+          item,
+        ])
+      );
+
+    return expectedPuroks.map(
+      (purok) => ({
+        purok,
+        predictedConsumption:
+          Math.max(
+            0,
+            toNumber(
+              resultMap.get(
+                purok
+              )
+                ?.predictedConsumption
+            )
+          ),
+      })
+    );
+  };
 
 // Generate All Predictions
 export const generateAllPredictionsService =
@@ -746,20 +1227,23 @@ export const generateAllPredictionsService =
     };
   };
 
-//   // check Gemini Models
-
-//   export const listGeminiModels = async () => {
+// Optional: Check available Gemini models
+//
+// export const listGeminiModels = async () => {
 //   const models = [];
-
-//   const response = await ai.models.list();
-
+//
+//   const response =
+//     await ai.models.list();
+//
 //   for await (const model of response) {
 //     models.push({
 //       name: model.name,
-//       displayName: model.displayName,
-//       description: model.description,
+//       displayName:
+//         model.displayName,
+//       description:
+//         model.description,
 //     });
 //   }
-
+//
 //   return models;
 // };

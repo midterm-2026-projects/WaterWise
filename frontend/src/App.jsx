@@ -7,6 +7,7 @@ import BillingLedger from "./pages/BillingLedger";
 import ConsumerProfile from "./pages/ConsumerProfile";
 import Login from "./pages/Login";
 import UsageMetrics from "./pages/UsageMetrics";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
@@ -20,6 +21,7 @@ const portalRoutes = [
   { label: "Profile Details", path: "/consumer/profile-details" },
   { label: "Billing Ledger", path: "/consumer/billing-ledger" },
   { label: "Usage Metrics", path: "/consumer/usage-metrics" },
+  { label: "Analytics", path: "/admin/analytics" },
 ];
 
 const roleAccess = {
@@ -34,6 +36,7 @@ const roleAccess = {
       "/admin/billings",
       "/admin/events",
       "/admin/announcements",
+      "/admin/analytics",
     ],
   },
   "meter-reader": {
@@ -141,6 +144,16 @@ export function AppRoutes() {
         }
         path="/admin"
       />
+      <Route
+              path="/admin/analytics"
+              element={
+                <RoleRouteGuard requiredRole="admin">
+                  <AppLayout>
+                    <AnalyticsDashboard />
+                  </AppLayout>
+                </RoleRouteGuard>
+              }
+            />
       <Route
         element={
           <RoleRouteGuard requiredRole="admin">

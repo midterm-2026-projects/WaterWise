@@ -1,54 +1,71 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+
+import { describe, expect, it, vi } from "vitest";
+
 import AdminMonthlyConsumptionCard from "../../components/AdminMonthlyConsumptionCard";
 
+import { fetchOverallMonthlyPrediction } from "../../services/consumptionAPI";
+
+vi.mock("../../services/consumptionAPI", () => ({
+  fetchOverallMonthlyPrediction: vi.fn(),
+}));
+
 describe("AdminMonthlyConsumptionCard", () => {
-  it("should render the monthly consumption card correctly", () => {
-    render(
-      <AdminMonthlyConsumptionCard
-        value="2,300"
-        subtitle="Current Month Consumption"
-      />
-    );
+  it("should render monthly prediction correctly", async () => {
+    fetchOverallMonthlyPrediction.mockResolvedValue({
+      data: {
+        prediction: 2300,
 
-    expect(
-      screen.getByText("Monthly Consumption")
-    ).toBeInTheDocument();
+        predictionMonth: "August",
+      },
+    });
 
-    expect(screen.getByText("2,300")).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Current Month Consumption")
-    ).toBeInTheDocument();
-  });
-
-  it("should render default values when no props are provided", () => {
     render(<AdminMonthlyConsumptionCard />);
 
-    expect(screen.getByText("0")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Overall Monthly Prediction"),
+      ).toBeInTheDocument();
 
-    expect(
-      screen.getByText("No data available")
-    ).toBeInTheDocument();
+      expect(screen.getByText("2,300")).toBeInTheDocument();
+
+      expect(screen.getByText("Forecast for August")).toBeInTheDocument();
+    });
   });
 
-  it("should render the default value when value is missing", () => {
-    render(
-      <AdminMonthlyConsumptionCard
-        subtitle="Current Month Consumption"
-      />
+  it("should render loading state", () => {
+    fetchOverallMonthlyPrediction.mockImplementation(
+      () => new Promise(() => {}),
     );
 
-    expect(screen.getByText("0")).toBeInTheDocument();
+    render(<AdminMonthlyConsumptionCard />);
+
+    expect(screen.getByText("Overall Monthly Prediction")).toBeInTheDocument();
   });
 
-  it("should render the default subtitle when subtitle is missing", () => {
-    render(
-      <AdminMonthlyConsumptionCard value="2,300" />
-    );
+  it("should render error message when API fails", async () => {
+    fetchOverallMonthlyPrediction.mockRejectedValue({
+      message: "Unable to load prediction.",
+    });
 
-    expect(
-      screen.getByText("No data available")
-    ).toBeInTheDocument();
+    render(<AdminMonthlyConsumptionCard />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Unable to load prediction."),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("should render zero when prediction is missing", async () => {
+    fetchOverallMonthlyPrediction.mockResolvedValue({
+      data: {},
+    });
+
+    render(<AdminMonthlyConsumptionCard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("0")).toBeInTheDocument();
+    });
   });
 });

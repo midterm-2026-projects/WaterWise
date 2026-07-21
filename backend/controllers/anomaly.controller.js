@@ -8,142 +8,226 @@ import {
   generateAllAnomaliesService,
 } from "../services/anomaly.service.js";
 
-// Overall
+// ==========================================
+// RESPONSE HELPERS
+// ==========================================
 
-// Get Monthly Anomaly
-export const getOverallMonthlyAnomaly = async (req, res) => {
-  try {
-    const anomaly =
-      await generateOverallMonthlyAnomaly();
-
-    res.status(200).json({
+const sendSuccess = (
+  res,
+  data,
+  statusCode = 200
+) => {
+  return res
+    .status(statusCode)
+    .json({
       success: true,
-      data: anomaly,
+      data,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
-// Get Yearly Anomaly
-export const getOverallYearlyAnomaly = async (req, res) => {
-  try {
-    const anomaly =
-      await generateOverallYearlyAnomaly();
+const sendError = (
+  res,
+  error,
+  statusCode = 500
+) => {
+  console.error(
+    "Anomaly controller error:",
+    error
+  );
 
-    res.status(200).json({
-      success: true,
-      data: anomaly,
-    });
-  } catch (error) {
-    res.status(500).json({
+  return res
+    .status(statusCode)
+    .json({
       success: false,
-      message: error.message,
+      message:
+        error?.message ||
+        "An unexpected error occurred.",
     });
-  }
 };
 
-// Purok
+const getValidatedPurok = (
+  req
+) => {
+  const purok =
+    req.params?.purok?.trim();
 
-// Get Monthly Anomaly
-export const getPerPurokMonthlyAnomaly = async (req, res) => {
-  try {
-    const { purok } = req.params;
+  if (!purok) {
+    throw new Error(
+      "Purok parameter is required."
+    );
+  }
 
-    const anomaly =
-      await generatePerPurokMonthlyAnomaly(
-        purok
+  return purok;
+};
+
+// ==========================================
+// OVERALL ANOMALIES
+// ==========================================
+
+// Get overall monthly anomaly
+export const getOverallMonthlyAnomaly =
+  async (req, res) => {
+    try {
+      const anomaly =
+        await generateOverallMonthlyAnomaly();
+
+      return sendSuccess(
+        res,
+        anomaly
       );
-
-    res.status(200).json({
-      success: true,
-      data: anomaly,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// Get Yearly Anomaly
-export const getPerPurokYearlyAnomaly = async (req, res) => {
-  try {
-    const { purok } = req.params;
-
-    const anomaly =
-      await generatePerPurokYearlyAnomaly(
-        purok
+    } catch (error) {
+      return sendError(
+        res,
+        error
       );
+    }
+  };
 
-    res.status(200).json({
-      success: true,
-      data: anomaly,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get overall yearly anomaly
+export const getOverallYearlyAnomaly =
+  async (req, res) => {
+    try {
+      const anomaly =
+        await generateOverallYearlyAnomaly();
 
-// All Puroks
+      return sendSuccess(
+        res,
+        anomaly
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
 
-// Get Monthly Anomaly
-export const getAllPuroksMonthlyAnomaly = async (req, res) => {
-  try {
-    const anomaly =
-      await generateAllPuroksMonthlyAnomaly();
+// ==========================================
+// PER-PUROK ANOMALIES
+// ==========================================
 
-    res.status(200).json({
-      success: true,
-      data: anomaly,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get monthly anomaly for one purok
+export const getPerPurokMonthlyAnomaly =
+  async (req, res) => {
+    try {
+      const purok =
+        getValidatedPurok(req);
 
-// Get Yearly Anomaly
-export const getAllPuroksYearlyAnomaly = async (req, res) => {
-  try {
-    const anomaly =
-      await generateAllPuroksYearlyAnomaly();
+      const anomaly =
+        await generatePerPurokMonthlyAnomaly(
+          purok
+        );
 
-    res.status(200).json({
-      success: true,
-      data: anomaly,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+      return sendSuccess(
+        res,
+        anomaly
+      );
+    } catch (error) {
+      const statusCode =
+        error.message ===
+        "Purok parameter is required."
+          ? 400
+          : 500;
 
-// Generate All Anomalies
-export const generateAllAnomalies = async (req, res) => {
-  try {
-    const anomalies =
-      await generateAllAnomaliesService();
+      return sendError(
+        res,
+        error,
+        statusCode
+      );
+    }
+  };
 
-    res.status(200).json({
-      success: true,
-      data: anomalies,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get yearly anomaly for one purok
+export const getPerPurokYearlyAnomaly =
+  async (req, res) => {
+    try {
+      const purok =
+        getValidatedPurok(req);
+
+      const anomaly =
+        await generatePerPurokYearlyAnomaly(
+          purok
+        );
+
+      return sendSuccess(
+        res,
+        anomaly
+      );
+    } catch (error) {
+      const statusCode =
+        error.message ===
+        "Purok parameter is required."
+          ? 400
+          : 500;
+
+      return sendError(
+        res,
+        error,
+        statusCode
+      );
+    }
+  };
+
+// ==========================================
+// ALL-PUROKS ANOMALIES
+// ==========================================
+
+// Get monthly anomalies for all puroks
+export const getAllPuroksMonthlyAnomaly =
+  async (req, res) => {
+    try {
+      const anomalies =
+        await generateAllPuroksMonthlyAnomaly();
+
+      return sendSuccess(
+        res,
+        anomalies
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
+
+// Get yearly anomalies for all puroks
+export const getAllPuroksYearlyAnomaly =
+  async (req, res) => {
+    try {
+      const anomalies =
+        await generateAllPuroksYearlyAnomaly();
+
+      return sendSuccess(
+        res,
+        anomalies
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
+
+// ==========================================
+// GENERATE ALL ANOMALIES
+// ==========================================
+
+export const generateAllAnomalies =
+  async (req, res) => {
+    try {
+      const anomalies =
+        await generateAllAnomaliesService();
+
+      return sendSuccess(
+        res,
+        anomalies
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
