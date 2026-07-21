@@ -602,28 +602,6 @@ export const getPerPurokYearlyHistory =
       }));
   };
 
-// Purok Yearly History
-export const getPerPurokYearlyHistory = (
-  purok
-) => {
-  const records = getPurokPredictionData();
-
-  return records
-    .filter(
-      (record) => record.purok === purok
-    )
-    .sort((a, b) => a.year - b.year)
-    .map((record) => ({
-      year: record.year,
-      consumption:
-        getConsumptionFields(record).reduce(
-          (sum, month) =>
-            sum + record[month],
-          0
-        ),
-    }));
-};
-
 // All Puroks Monthly History
 export const getAllPuroksMonthlyHistory =
   async () => {
