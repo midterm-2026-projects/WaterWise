@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
 import AppLayout from "./components/AppLayout";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import RouteAccessError from "./components/RouteAccessError";
 import { MOCK_ROLE_STORAGE_KEY } from "./config/mockAuth";
 import BillingLedger from "./pages/BillingLedger";
@@ -219,6 +220,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
+      <PWAInstallPrompt />
     </BrowserRouter>
   );
 }
