@@ -14,7 +14,8 @@ const servers = [
     key: "backendPid",
     cwd: backendDirectory,
     args: ["app.js"],
-    env: { PORT: "5001", WATERWISE_E2E: "true" },
+    
+env: { PORT: "5001", WATERWISE_E2E: "true", NODE_ENV: "test", ...process.env },
     healthUrl: "http://127.0.0.1:5001/api/consumption/ranking",
   },
   {

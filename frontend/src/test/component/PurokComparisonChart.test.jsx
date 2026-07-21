@@ -1,131 +1,147 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+
+import { describe, expect, it, vi } from "vitest";
 
 import PurokComparisonChart from "../../components/PurokComparisonChart";
-import {
-  monthlyComparisonData,
-  yearlyComparisonData,
-} from "../../data/analyticsData";
 
-describe("Purok Comparison Chart Testing", () => {
-  it("should render the Purok Comparison Chart title", () => {
-    // Arrange
-    render(
-      <PurokComparisonChart
-        data={monthlyComparisonData}
-      />
-    );
+import { fetchAllPuroksMonthlyHistory } from "../../services/consumptionAPI";
 
-    // Act
-    const result = screen.getByText(
-      "Purok Comparison Chart"
-    );
+vi.mock("../../services/consumptionAPI", () => ({
+  fetchAllPuroksMonthlyHistory: vi.fn(),
+}));
 
-    // Assert
-    expect(result).toBeInTheDocument();
+describe("PurokComparisonChart", () => {
+  it("should render the Purok Comparison Chart title", async () => {
+    fetchAllPuroksMonthlyHistory.mockResolvedValue({
+      data: [
+        {
+          purok: "Purok 1",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 5010,
+            },
+          ],
+        },
+      ],
+    });
+
+    render(<PurokComparisonChart />);
+
+    expect(screen.getByText("Purok Comparison Chart")).toBeInTheDocument();
   });
 
-  it("should render the monthly comparison graph", () => {
-    // Arrange
-    render(
-      <PurokComparisonChart
-        graphTitle="Monthly Comparison Bar Chart"
-        data={monthlyComparisonData}
-      />
-    );
+  it("should render latest monthly comparison data", async () => {
+    fetchAllPuroksMonthlyHistory.mockResolvedValue({
+      data: [
+        {
+          purok: "Purok 1",
 
-    // Act
-    const result = screen.getByText(
-      "Monthly Comparison Bar Chart"
-    );
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 5010,
+            },
+          ],
+        },
 
-    // Assert
-    expect(result).toBeInTheDocument();
+        {
+          purok: "Purok 2",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 4550,
+            },
+          ],
+        },
+
+        {
+          purok: "Purok 3",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 5350,
+            },
+          ],
+        },
+
+        {
+          purok: "Purok 4",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 4250,
+            },
+          ],
+        },
+
+        {
+          purok: "Purok 5",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 4790,
+            },
+          ],
+        },
+
+        {
+          purok: "Purok 6",
+
+          historical: [
+            {
+              month: "July",
+              year: 2026,
+              consumption: 4580,
+            },
+          ],
+        },
+      ],
+    });
+
+    render(<PurokComparisonChart />);
+
+    await waitFor(() => {
+      expect(fetchAllPuroksMonthlyHistory).toHaveBeenCalled();
+    });
   });
 
-  it("should render all puroks monthly comparison data", () => {
-    // Arrange
-    render(
-      <PurokComparisonChart
-        data={monthlyComparisonData}
-      />
-    );
+  it("should render error message when API fails", async () => {
+    fetchAllPuroksMonthlyHistory.mockRejectedValue({
+      message: "Unable to load purok comparison data.",
+    });
 
-    // Assert
-    expect(
-      screen.getByText("Purok 1 - 5010 m³")
-    ).toBeInTheDocument();
+    render(<PurokComparisonChart />);
 
-    expect(
-      screen.getByText("Purok 2 - 4550 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 3 - 5350 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 4 - 4250 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 5 - 4790 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 6 - 4580 m³")
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Unable to load purok comparison data."),
+      ).toBeInTheDocument();
+    });
   });
 
-  it("should render all puroks yearly comparison data", () => {
-    // Arrange
-    render(
-      <PurokComparisonChart
-        graphTitle="Yearly Comparison Bar Chart"
-        data={yearlyComparisonData}
-      />
-    );
+  it("should render no comparison data message when records are empty", async () => {
+    fetchAllPuroksMonthlyHistory.mockResolvedValue({
+      data: [],
+    });
 
-    // Assert
-    expect(
-      screen.getByText("Purok 1 - 59800 m³")
-    ).toBeInTheDocument();
+    render(<PurokComparisonChart />);
 
-    expect(
-      screen.getByText("Purok 2 - 54800 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 3 - 64900 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 4 - 49500 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 5 - 56300 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Purok 6 - 52600 m³")
-    ).toBeInTheDocument();
-  });
-
-  it("should render a default message when no data is available", () => {
-    // Arrange
-    render(
-      <PurokComparisonChart
-        data={[]}
-      />
-    );
-
-    // Act
-    const result = screen.getByText(
-      "No purok comparison data available."
-    );
-
-    // Assert
-    expect(result).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No Comparison Data Available"),
+      ).toBeInTheDocument();
+    });
   });
 });

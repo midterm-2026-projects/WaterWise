@@ -1,72 +1,127 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+
+import { describe, expect, it, vi } from "vitest";
 
 import ConsumptionRankingSection from "../../components/ConsumptionRankingSection";
-import { monthlyComparisonData } from "../../data/analyticsData";
+
+import { fetchConsumptionRanking } from "../../services/consumptionAPI";
+
+vi.mock("../../services/consumptionAPI", () => ({
+  fetchConsumptionRanking: vi.fn(),
+}));
 
 describe("Consumption Ranking", () => {
-  it("should render the Consumption Ranking title", () => {
+  it("should render the Consumption Ranking title", async () => {
     // Arrange
-    render(
-      <ConsumptionRankingSection
-        data={monthlyComparisonData}
-      />
+    fetchConsumptionRanking.mockResolvedValue({
+      data: [],
+    });
+
+    // Act
+    render(<ConsumptionRankingSection />);
+
+    // Assert
+    const title = await screen.findByText("Consumption Ranking");
+
+    expect(title).toBeInTheDocument();
+  });
+
+
+  it("should render all ranked puroks", async () => {
+    // Arrange
+    fetchConsumptionRanking.mockResolvedValue({
+      data: [
+        {
+          purok: "Purok 1",
+          consumption: 5010,
+        },
+        {
+          purok: "Purok 2",
+          consumption: 4550,
+        },
+        {
+          purok: "Purok 3",
+          consumption: 5350,
+        },
+        {
+          purok: "Purok 4",
+          consumption: 4250,
+        },
+        {
+          purok: "Purok 5",
+          consumption: 4790,
+        },
+        {
+          purok: "Purok 6",
+          consumption: 4580,
+        },
+      ],
+    });
+
+    // Act
+    render(<ConsumptionRankingSection />);
+
+    // Assert
+    expect(await screen.findByText("Purok 1")).toBeInTheDocument();
+    expect(screen.getByText("Purok 2")).toBeInTheDocument();
+    expect(screen.getByText("Purok 3")).toBeInTheDocument();
+    expect(screen.getByText("Purok 4")).toBeInTheDocument();
+    expect(screen.getByText("Purok 5")).toBeInTheDocument();
+    expect(screen.getByText("Purok 6")).toBeInTheDocument();
+  });
+
+
+  it("should render ranking numbers correctly", async () => {
+    // Arrange
+    fetchConsumptionRanking.mockResolvedValue({
+      data: [
+        {
+          purok: "Purok 1",
+          consumption: 5010,
+        },
+        {
+          purok: "Purok 2",
+          consumption: 4550,
+        },
+      ],
+    });
+
+    // Act
+    render(<ConsumptionRankingSection />);
+
+    // Assert
+    expect(await screen.findByText("Rank #1")).toBeInTheDocument();
+    expect(screen.getByText("Rank #2")).toBeInTheDocument();
+  })
+
+  it("should render error message when ranking loading fails", async () => {
+    // Arrange
+    fetchConsumptionRanking.mockRejectedValue(
+      new Error("Failed loading ranking"),
     );
 
     // Act
-    const result = screen.getByText(
-      "Consumption Ranking"
-    );
-
-    // Assert
-    expect(result).toBeInTheDocument();
-  });
-
-  it("should render all ranked puroks", () => {
-    // Arrange
-    render(
-      <ConsumptionRankingSection
-        data={monthlyComparisonData}
-      />
-    );
+    render(<ConsumptionRankingSection />);
 
     // Assert
     expect(
-      screen.getByText("#1 Purok 1 - 5010 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("#2 Purok 2 - 4550 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("#3 Purok 3 - 5350 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("#4 Purok 4 - 4250 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("#5 Purok 5 - 4790 m³")
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("#6 Purok 6 - 4580 m³")
+      await screen.findByText("Failed loading ranking"),
     ).toBeInTheDocument();
   });
 
-  it("should render a default message when no ranking data is available", () => {
+
+  it("should render default message when no ranking data is available", async () => {
     // Arrange
-    render(
-      <ConsumptionRankingSection
-        data={[]}
-      />
-    );
+    fetchConsumptionRanking.mockResolvedValue({
+      data: [],
+    });
+
+    // Act
+    render(<ConsumptionRankingSection />);
 
     // Assert
     expect(
-      screen.getByText("No consumption ranking available.")
+      await screen.findByText("No Ranking Available"),
     ).toBeInTheDocument();
   });
 });

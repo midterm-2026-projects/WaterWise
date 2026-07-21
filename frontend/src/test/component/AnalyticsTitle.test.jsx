@@ -1,12 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+
+import { describe, expect, it } from "vitest";
+
 import AnalyticsTitle from "../../components/AnalyticsTitle";
 
 describe("Analytics Title Testing", () => {
   const dashboardContent = [
     {
-      label: "title",
-      text: "Analytics Dashboard",
+      label: "section label",
+      text: "WaterWise Analytics",
     },
     {
       label: "subtitle",
@@ -15,7 +17,7 @@ describe("Analytics Title Testing", () => {
   ];
 
   it.each(dashboardContent)(
-    "should render dashboard Title and Subtitle",
+    "should render analytics title content",
     ({ text }) => {
       // Arrange
       render(<AnalyticsTitle />);
@@ -25,6 +27,6 @@ describe("Analytics Title Testing", () => {
 
       // Assert
       expect(result).toBeInTheDocument();
-    }
+    },
   );
 });

@@ -8,142 +8,226 @@ import {
   generateAllRecommendationsService,
 } from "../services/recommendation.service.js";
 
-// Overall
+// ==========================================
+// RESPONSE HELPERS
+// ==========================================
 
-// Get Monthly Recommendations
-export const getOverallMonthlyRecommendations = async (req, res) => {
-  try {
-    const data =
-      await generateOverallMonthlyRecommendations();
-
-    res.status(200).json({
+const sendSuccess = (
+  res,
+  data,
+  statusCode = 200
+) => {
+  return res
+    .status(statusCode)
+    .json({
       success: true,
       data,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
-// Get Yearly Recommendations
-export const getOverallYearlyRecommendations = async (req, res) => {
-  try {
-    const data =
-      await generateOverallYearlyRecommendations();
+const sendError = (
+  res,
+  error,
+  statusCode = 500
+) => {
+  console.error(
+    "Recommendation controller error:",
+    error
+  );
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
+  return res
+    .status(statusCode)
+    .json({
       success: false,
-      message: error.message,
+      message:
+        error?.message ||
+        "An unexpected error occurred.",
     });
-  }
 };
 
-// Purok
+const getValidatedPurok = (
+  req
+) => {
+  const purok =
+    req.params?.purok?.trim();
 
-// Get Monthly Recommendations
-export const getPerPurokMonthlyRecommendations = async (req, res) => {
-  try {
-    const { purok } = req.params;
+  if (!purok) {
+    throw new Error(
+      "Purok parameter is required."
+    );
+  }
 
-    const data =
-      await generatePerPurokMonthlyRecommendations(
-        purok
+  return purok;
+};
+
+// ==========================================
+// OVERALL RECOMMENDATIONS
+// ==========================================
+
+// Get overall monthly recommendations
+export const getOverallMonthlyRecommendations =
+  async (req, res) => {
+    try {
+      const data =
+        await generateOverallMonthlyRecommendations();
+
+      return sendSuccess(
+        res,
+        data
       );
-
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// Get Yearly Recommendations
-export const getPerPurokYearlyRecommendations = async (req, res) => {
-  try {
-    const { purok } = req.params;
-
-    const data =
-      await generatePerPurokYearlyRecommendations(
-        purok
+    } catch (error) {
+      return sendError(
+        res,
+        error
       );
+    }
+  };
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get overall yearly recommendations
+export const getOverallYearlyRecommendations =
+  async (req, res) => {
+    try {
+      const data =
+        await generateOverallYearlyRecommendations();
 
-// All Puroks
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
 
-// Get Monthly Recommendations
-export const getAllPuroksMonthlyRecommendations = async (req, res) => {
-  try {
-    const data =
-      await generateAllPuroksMonthlyRecommendations();
+// ==========================================
+// PER-PUROK RECOMMENDATIONS
+// ==========================================
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get monthly recommendations for one purok
+export const getPerPurokMonthlyRecommendations =
+  async (req, res) => {
+    try {
+      const purok =
+        getValidatedPurok(req);
 
-// Get Yearly Recommendations
-export const getAllPuroksYearlyRecommendations = async (req, res) => {
-  try {
-    const data =
-      await generateAllPuroksYearlyRecommendations();
+      const data =
+        await generatePerPurokMonthlyRecommendations(
+          purok
+        );
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      const statusCode =
+        error.message ===
+        "Purok parameter is required."
+          ? 400
+          : 500;
 
-// Generate All Recommendations
-export const getAllRecommendations = async (req, res) => {
-  try {
-    const data =
-      await generateAllRecommendationsService();
+      return sendError(
+        res,
+        error,
+        statusCode
+      );
+    }
+  };
 
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// Get yearly recommendations for one purok
+export const getPerPurokYearlyRecommendations =
+  async (req, res) => {
+    try {
+      const purok =
+        getValidatedPurok(req);
+
+      const data =
+        await generatePerPurokYearlyRecommendations(
+          purok
+        );
+
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      const statusCode =
+        error.message ===
+        "Purok parameter is required."
+          ? 400
+          : 500;
+
+      return sendError(
+        res,
+        error,
+        statusCode
+      );
+    }
+  };
+
+// ==========================================
+// ALL-PUROKS RECOMMENDATIONS
+// ==========================================
+
+// Get monthly recommendations for all puroks
+export const getAllPuroksMonthlyRecommendations =
+  async (req, res) => {
+    try {
+      const data =
+        await generateAllPuroksMonthlyRecommendations();
+
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
+
+// Get yearly recommendations for all puroks
+export const getAllPuroksYearlyRecommendations =
+  async (req, res) => {
+    try {
+      const data =
+        await generateAllPuroksYearlyRecommendations();
+
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };
+
+// ==========================================
+// GENERATE ALL RECOMMENDATIONS
+// ==========================================
+
+export const getAllRecommendations =
+  async (req, res) => {
+    try {
+      const data =
+        await generateAllRecommendationsService();
+
+      return sendSuccess(
+        res,
+        data
+      );
+    } catch (error) {
+      return sendError(
+        res,
+        error
+      );
+    }
+  };

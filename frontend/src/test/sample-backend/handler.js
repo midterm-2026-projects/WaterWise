@@ -472,6 +472,423 @@ export const handlers = [
       ],
     });
   }),
+
+  // Anomaly
+
+  // Get Overall Monthly Anomaly
+  http.get("/api/anomaly/overall/monthly", () => {
+    return HttpResponse.json({
+      status: "HIGH",
+      hasAnomaly: true,
+      riskScore: 84,
+      summary: "Monthly water consumption exceeded historical trends.",
+      anomalies: [
+        {
+          period: "June 2025",
+          actualConsumption: 1800,
+          expectedConsumption: 1250,
+          percentIncrease: 44,
+          reason: "Sudden abnormal increase in consumption.",
+        },
+      ],
+    });
+  }),
+
+  // Get Overall Yearly Anomaly
+  http.get("/api/anomaly/overall/yearly", () => {
+    return HttpResponse.json({
+      status: "MEDIUM",
+      hasAnomaly: true,
+      riskScore: 60,
+      summary: "Yearly consumption shows an increasing trend.",
+      anomalies: [
+        {
+          period: "2025",
+          actualConsumption: 75000,
+          expectedConsumption: 55000,
+          percentIncrease: 36,
+          reason: "Yearly consumption exceeded expected value.",
+        },
+      ],
+    });
+  }),
+
+  // Get Purok Monthly Anomaly
+  http.get("/api/anomaly/purok/:purok/monthly", ({ params }) => {
+    return HttpResponse.json({
+      purok: params.purok,
+      status: "HIGH",
+      hasAnomaly: true,
+      riskScore: 80,
+      summary: "High water consumption detected in this purok.",
+      anomalies: [
+        {
+          period: "June 2025",
+          actualConsumption: 3000,
+          expectedConsumption: 2000,
+          percentIncrease: 50,
+          reason: "Possible leakage or excessive water usage.",
+        },
+      ],
+    });
+  }),
+
+  // Get Purok Yearly Anomaly
+  http.get("/api/anomaly/purok/:purok/yearly", ({ params }) => {
+    return HttpResponse.json({
+      purok: params.purok,
+      status: "NORMAL",
+      hasAnomaly: false,
+      riskScore: 0,
+      summary: "No abnormal yearly consumption detected.",
+      anomalies: [],
+    });
+  }),
+
+  // Get All Puroks Monthly Anomaly
+  http.get("/api/anomaly/puroks/monthly", () => {
+    return HttpResponse.json([
+      {
+        purok: "Purok 1",
+        status: "HIGH",
+        hasAnomaly: true,
+        riskScore: 85,
+        summary: "High monthly consumption detected.",
+        anomalies: [
+          {
+            period: "June 2025",
+            actualConsumption: 3000,
+            expectedConsumption: 2000,
+            percentIncrease: 50,
+            reason: "Possible leakage or excessive water usage.",
+          },
+        ],
+      },
+      {
+        purok: "Purok 2",
+        status: "NORMAL",
+        hasAnomaly: false,
+        riskScore: 0,
+        summary: "No anomaly detected.",
+        anomalies: [],
+      },
+    ]);
+  }),
+
+  // Get All Puroks Yearly Anomaly
+  http.get("/api/anomaly/puroks/yearly", () => {
+    return HttpResponse.json([
+      {
+        purok: "Purok 1",
+        status: "MEDIUM",
+        hasAnomaly: true,
+        riskScore: 50,
+        summary: "Moderate yearly consumption increase.",
+        anomalies: [
+          {
+            period: "2025",
+            actualConsumption: 28000,
+            expectedConsumption: 21000,
+            percentIncrease: 33,
+            reason: "Yearly consumption exceeded expected value.",
+          },
+        ],
+      },
+      {
+        purok: "Purok 2",
+        status: "NORMAL",
+        hasAnomaly: false,
+        riskScore: 0,
+        summary: "No abnormal yearly consumption detected.",
+        anomalies: [],
+      },
+    ]);
+  }),
+
+  // Generate All Anomalies
+  http.get("/api/anomaly/all", () => {
+    return HttpResponse.json({
+      overallMonthly: {
+        status: "HIGH",
+        hasAnomaly: true,
+        riskScore: 84,
+        summary: "Monthly water consumption exceeded historical trends.",
+        anomalies: [
+          {
+            period: "June 2025",
+            actualConsumption: 1800,
+            expectedConsumption: 1250,
+            percentIncrease: 44,
+            reason: "Sudden abnormal increase in consumption.",
+          },
+        ],
+      },
+
+      overallYearly: {
+        status: "MEDIUM",
+        hasAnomaly: true,
+        riskScore: 60,
+        summary: "Yearly consumption shows an increasing trend.",
+        anomalies: [
+          {
+            period: "2025",
+            actualConsumption: 75000,
+            expectedConsumption: 55000,
+            percentIncrease: 36,
+            reason: "Yearly consumption exceeded expected value.",
+          },
+        ],
+      },
+
+      allPuroksMonthly: [
+        {
+          purok: "Purok 1",
+          status: "HIGH",
+          hasAnomaly: true,
+          riskScore: 85,
+          summary: "High monthly consumption detected.",
+          anomalies: [
+            {
+              period: "June 2025",
+              actualConsumption: 3000,
+              expectedConsumption: 2000,
+              percentIncrease: 50,
+              reason: "Possible leakage or excessive water usage.",
+            },
+          ],
+        },
+        {
+          purok: "Purok 2",
+          status: "NORMAL",
+          hasAnomaly: false,
+          riskScore: 0,
+          summary: "No anomaly detected.",
+          anomalies: [],
+        },
+      ],
+
+      allPuroksYearly: [
+        {
+          purok: "Purok 1",
+          status: "MEDIUM",
+          hasAnomaly: true,
+          riskScore: 50,
+          summary: "Moderate yearly consumption increase.",
+          anomalies: [
+            {
+              period: "2025",
+              actualConsumption: 28000,
+              expectedConsumption: 21000,
+              percentIncrease: 33,
+              reason: "Yearly consumption exceeded expected value.",
+            },
+          ],
+        },
+        {
+          purok: "Purok 2",
+          status: "NORMAL",
+          hasAnomaly: false,
+          riskScore: 0,
+          summary: "No abnormal yearly consumption detected.",
+          anomalies: [],
+        },
+      ],
+    });
+  }),
+  // Recommendation
+
+  // Get Overall Monthly Recommendations
+  http.get("/api/recommendation/overall/monthly", () => {
+    return HttpResponse.json({
+      summary: "Monthly consumption trend requires monitoring.",
+      recommendations: [
+        {
+          title: "Monitor Monthly Consumption",
+          description: "Review monthly consumption trends regularly.",
+        },
+        {
+          title: "Analyze Usage Pattern",
+          description: "Compare current consumption with historical data.",
+        },
+      ],
+    });
+  }),
+
+  // Get Overall Yearly Recommendations
+  http.get("/api/recommendation/overall/yearly", () => {
+    return HttpResponse.json({
+      summary: "Yearly consumption shows noticeable changes.",
+      recommendations: [
+        {
+          title: "Review Yearly Trend",
+          description: "Analyze yearly consumption changes.",
+        },
+        {
+          title: "Optimize Water Distribution",
+          description: "Review yearly allocation to reduce excessive consumption.",
+        },
+      ],
+    });
+  }),
+
+  // Get Purok Monthly Recommendations
+  http.get("/api/recommendation/purok/:purok/monthly", ({ params }) => {
+    return HttpResponse.json({
+      purok: params.purok,
+      summary: "Purok monthly consumption requires observation.",
+      recommendations: [
+        {
+          title: "Monitor Purok Consumption",
+          description: "Track monthly usage patterns for this purok.",
+        },
+        {
+          title: "Inspect Possible Leakage",
+          description: "Inspect pipelines and household connections.",
+        },
+      ],
+    });
+  }),
+
+  // Get Purok Yearly Recommendations
+  http.get("/api/recommendation/purok/:purok/yearly", ({ params }) => {
+    return HttpResponse.json({
+      purok: params.purok,
+      summary: "Purok yearly consumption remains under monitoring.",
+      recommendations: [
+        {
+          title: "Continue Monitoring",
+          description: "Maintain yearly monitoring of water usage.",
+        },
+        {
+          title: "Community Awareness",
+          description: "Promote water conservation programs.",
+        },
+      ],
+    });
+  }),
+
+  // Get All Puroks Monthly Recommendations
+  http.get("/api/recommendation/puroks/monthly", () => {
+    return HttpResponse.json([
+      {
+        purok: "Purok 1",
+        summary: "Monthly consumption trend detected.",
+        recommendations: [
+          {
+            title: "Review Usage",
+            description: "Analyze monthly consumption behavior.",
+          },
+        ],
+      },
+      {
+        purok: "Purok 2",
+        summary: "Consumption remains stable.",
+        recommendations: [
+          {
+            title: "Continue Monitoring",
+            description: "Maintain current monitoring practices.",
+          },
+        ],
+      },
+    ]);
+  }),
+
+  // Get All Puroks Yearly Recommendations
+  http.get("/api/recommendation/puroks/yearly", () => {
+    return HttpResponse.json([
+      {
+        purok: "Purok 1",
+        summary: "Yearly trend requires observation.",
+        recommendations: [
+          {
+            title: "Analyze Yearly Consumption",
+            description: "Compare yearly consumption patterns.",
+          },
+        ],
+      },
+      {
+        purok: "Purok 2",
+        summary: "Consumption remains stable.",
+        recommendations: [
+          {
+            title: "Maintain Monitoring",
+            description: "Continue yearly observation of consumption.",
+          },
+        ],
+      },
+    ]);
+  }),
+
+  // Generate All Recommendations
+  http.get("/api/recommendation", () => {
+    return HttpResponse.json({
+      overallMonthly: {
+        summary: "Monthly recommendations generated.",
+        recommendations: [
+          {
+            title: "Monitor Monthly Consumption",
+            description: "Review monthly water usage.",
+          },
+        ],
+      },
+
+      overallYearly: {
+        summary: "Yearly recommendations generated.",
+        recommendations: [
+          {
+            title: "Review Yearly Trend",
+            description: "Analyze yearly water consumption.",
+          },
+        ],
+      },
+
+      allPuroksMonthly: [
+        {
+          purok: "Purok 1",
+          summary: "Monthly monitoring required.",
+          recommendations: [
+            {
+              title: "Inspect Usage",
+              description: "Review monthly consumption.",
+            },
+          ],
+        },
+        {
+          purok: "Purok 2",
+          summary: "Consumption remains stable.",
+          recommendations: [
+            {
+              title: "Continue Monitoring",
+              description: "Maintain monitoring activities.",
+            },
+          ],
+        },
+      ],
+
+      allPuroksYearly: [
+        {
+          purok: "Purok 1",
+          summary: "Yearly monitoring required.",
+          recommendations: [
+            {
+              title: "Analyze Consumption",
+              description: "Review yearly trends.",
+            },
+          ],
+        },
+        {
+          purok: "Purok 2",
+          summary: "Yearly consumption is stable.",
+          recommendations: [
+            {
+              title: "Maintain Monitoring",
+              description: "Continue yearly observation.",
+            },
+          ],
+        },
+      ],
+    });
+  }),
 ];
 
 
