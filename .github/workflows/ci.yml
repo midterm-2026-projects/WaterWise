@@ -124,7 +124,7 @@ jobs:
         env:
           CI: true
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NODE_ENV: test'
+          NODE_ENV: test
           
       - name: Upload Playwright HTML report
         if: always()
