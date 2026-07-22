@@ -1,6 +1,17 @@
 import { consumerService } from '../services/consumerService.js';
 import { getCurrentUser } from '../services/AuthService.js';
 
+export const getConsumers = async (_req, res) => {
+  try {
+    return res.status(200).json({ data: await consumerService.listConsumers() });
+  } catch {
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Unable to retrieve consumers.'
+    });
+  }
+};
+
 export const getProfile = async (req, res) => {
   try {
     const user = req.user ?? await getCurrentUser();

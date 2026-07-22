@@ -8,6 +8,10 @@ import consumerRoutes from "./routes/consumerRoutes.js";
 import consumptionRoutes from "./routes/consumption.routes.js";
 import consumptionHistoryRoutes from "./routes/consumptionHistory.routes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import eventRoutes from "./routes/eventRoutes.js";
+import meterReadingRoutes from "./routes/meterReading.routes.js";
 
 import anomaly from "./routes/anomalyRoutes.js";
 import recomendationRoutes from "./routes/recommendationRoutes.js";
@@ -32,6 +36,10 @@ app.use("/api/auth", authRoutes);
 app.use(billingRoutes);
 app.use(consumerRoutes);
 app.use(notificationRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api", meterReadingRoutes);
 app.use("/api/consumption", consumptionRoutes);
 app.use("/api/consumption", consumptionHistoryRoutes);
 

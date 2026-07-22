@@ -71,9 +71,9 @@ describe("AppLayout rendering", () => {
   it("renders the meter-reader navigation", () => {
     renderLayout("/meter-reader/readings-entry");
 
-    expect(screen.getByRole("heading", { name: "Readings Entry" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Readings Entry" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Consumer Directory" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Record Consumption Entry" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Record Consumption Entry" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Consumer Directory" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Billing Ledger" })).not.toBeInTheDocument();
   });
 });

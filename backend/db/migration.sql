@@ -144,3 +144,19 @@ CREATE TRIGGER trg_after_consumption_insert
 AFTER INSERT ON consumption
 FOR EACH ROW
 EXECUTE FUNCTION generate_billing_announcement();
+
+-- 10. GENERATED REPORTS TABLE
+CREATE TABLE IF NOT EXISTS generated_reports (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+    pdf_file BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT generated_reports_date_range CHECK (end_date >= start_date)
+);
+
+CREATE INDEX IF NOT EXISTS generated_reports_created_at_idx
+ON generated_reports (created_at DESC);

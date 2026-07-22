@@ -15,6 +15,25 @@ function unwrap({ data, error }) {
 }
 
 export const consumerModel = {
+  async findAll() {
+    if (process.env.WATERWISE_E2E === "true") {
+      return [
+        { id: 1, username: "C-1001", full_name: "Juan Dela Cruz", email: "juan@example.com", purok_no: 1, status: "active" },
+        { id: 2, username: "C-1002", full_name: "Maria Santos", email: "maria@example.com", purok_no: 2, status: "active" },
+        { id: 3, username: "C-1003", full_name: "Pedro Reyes", email: "pedro@example.com", purok_no: 3, status: "active" },
+        { id: 4, username: "C-1004", full_name: "Ana Cruz", email: "ana@example.com", purok_no: 4, status: "active" },
+        { id: 5, username: "C-1005", full_name: "Jose Garcia", email: "jose@example.com", purok_no: 5, status: "active" },
+      ];
+    }
+
+    const result = await supabase
+      .from("consumers")
+      .select("id, username, full_name, email, purok_no, status")
+      .order("full_name", { ascending: true });
+
+    return unwrap(result) ?? [];
+  },
+
   async findProfile(profileId, sessionUserId) {
     assertOwnAccount(profileId, sessionUserId);
 

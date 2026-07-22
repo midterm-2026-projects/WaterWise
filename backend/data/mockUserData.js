@@ -14,4 +14,11 @@ export const mockUsers = [
     password: "tenant123",
     role: "consumer",
   },
+  {
+    id: 3,
+    name: "Field Meter Reader",
+    email: "reader@gmail.com",
+    password: "reader123",
+    role: "meter-reader",
+  },
 ];

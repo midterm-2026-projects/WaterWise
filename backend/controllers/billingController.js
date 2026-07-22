@@ -29,8 +29,9 @@ export async function getCurrentBilling(_req, res) {
 
 export async function getBillingHistory(_req, res) {
   try {
-    const userId = await resolveUserId();
-    const billingRecords = await fetchAllBilling(userId);
+    // This endpoint powers the administrator billing and payment ledgers, so it
+    // must return all accounts instead of depending on a consumer login session.
+    const billingRecords = await fetchAllBilling();
 
     return res.status(200).json(billingRecords);
   } catch {

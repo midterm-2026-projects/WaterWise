@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function AnnouncementForm() {
+export default function AnnouncementForm({ onSubmit }) {
   const [announcement, setAnnouncement] = useState({
     title: "",
     content: "",
@@ -18,7 +18,9 @@ export default function AnnouncementForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    alert("Announcement Published!");
+    onSubmit?.({ ...announcement });
+
+    if (!onSubmit) alert("Announcement Published!");
 
     setAnnouncement({
       title: "",
@@ -29,8 +31,8 @@ export default function AnnouncementForm() {
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-6 text-2xl font-bold">
+    <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
+      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">New communication</p><h2 className="mb-6 mt-1 text-2xl font-extrabold">
         Create Announcement
       </h2>
 
@@ -44,7 +46,7 @@ export default function AnnouncementForm() {
           placeholder="Announcement Title"
           value={announcement.title}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
         />
 
         <textarea
@@ -53,7 +55,7 @@ export default function AnnouncementForm() {
           value={announcement.content}
           onChange={handleChange}
           rows={5}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
         />
 
         <input
@@ -61,14 +63,14 @@ export default function AnnouncementForm() {
           name="publicationDate"
           value={announcement.publicationDate}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
         />
 
         <select
           name="relatedEvent"
           value={announcement.relatedEvent}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
         >
           <option value="">
             Select Related Event
@@ -89,7 +91,7 @@ export default function AnnouncementForm() {
 
         <button
           type="submit"
-          className="rounded bg-green-600 px-6 py-3 text-white hover:bg-green-700"
+          className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700"
         >
           Publish Announcement
         </button>

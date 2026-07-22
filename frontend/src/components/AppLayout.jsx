@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiBookOpen, FiDroplet, FiFileText, FiGrid, FiMap, FiMessageSquare, FiUsers, FiX } from "react-icons/fi";
+import { FiBookOpen, FiCreditCard, FiDroplet, FiFileText, FiGrid, FiMap, FiMessageSquare, FiUsers, FiX } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router";
 import { MOCK_ROLE_STORAGE_KEY } from "../config/mockAuth";
 import { getCurrentAccount, logout } from "../services/auth.service";
@@ -25,9 +25,11 @@ const ROLE_CONFIG = {
       { label: "Consumers", path: "/admin/consumers", Icon: FiUsers },
       { label: "Readings", path: "/admin/readings", Icon: FiBookOpen },
       { label: "Billings", path: "/admin/billings", Icon: FiFileText },
+      { label: "Payments", path: "/admin/payments", Icon: FiCreditCard },
       { label: "Events", path: "/admin/events", Icon: FiMap },
       { label: "Announcements", path: "/admin/announcements", Icon: FiMessageSquare },
       { label: "Analytics", path: "/admin/analytics", Icon: FiGrid },
+      { label: "Reports", path: "/admin/reports", Icon: FiFileText },
       
     ],
   },
@@ -38,8 +40,7 @@ const ROLE_CONFIG = {
     basePath: "/meter-reader",
     homePath: "/meter-reader/readings-entry",
     links: [
-      { label: "Readings Entry", path: "/meter-reader/readings-entry", Icon: FiBookOpen },
-      { label: "Consumer Directory", path: "/meter-reader/consumer-directory", Icon: FiUsers },
+      { label: "Record Consumption Entry", path: "/meter-reader/readings-entry", Icon: FiBookOpen },
     ],
   },
   consumer: {
@@ -96,16 +97,19 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     const controller = new AbortController();
 
-    getCurrentAccount({ signal: controller.signal })
-      .then(({ user }) => setAccountName(user?.name ?? user?.email ?? ""))
-      .catch(() => setAccountName(""));
-
     if (activeRole === "consumer") {
+      getCurrentAccount({ signal: controller.signal })
+        .then(({ user }) => setAccountName(user?.name ?? user?.email ?? ""))
+        .catch(() => setAccountName(""));
+
       fetchNotifications({ signal: controller.signal })
         .then(setNotifications)
         .catch(() => setNotifications([]));
     } else {
-      queueMicrotask(() => setNotifications([]));
+      queueMicrotask(() => {
+        setAccountName("");
+        setNotifications([]);
+      });
     }
 
     return () => controller.abort();

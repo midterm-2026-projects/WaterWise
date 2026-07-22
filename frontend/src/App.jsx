@@ -8,20 +8,30 @@ import ConsumerProfile from "./pages/ConsumerProfile";
 import Login from "./pages/Login";
 import UsageMetrics from "./pages/UsageMetrics";
 import AnalyticsDashboard from "./pages/analyticsDashboard";
+import Reports from "./pages/Reports";
+import ConsumerManagementPage from "./pages/ConsumerManagementPage";
+import AdminReadingsPage from "./pages/AdminReadingsPage";
+import BillingManagementPage from "./pages/BillingManagementPage";
+import EventManagementPage from "./pages/EventManagementPage";
+import AnnouncementManagementPage from "./pages/AnnouncementManagementPage";
+import PaymentProcessingPage from "./pages/PaymentProcessingPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import RecordConsumptionPage from "./pages/RecordConsumptionPage";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
   { label: "Consumers", path: "/admin/consumers" },
   { label: "Readings", path: "/admin/readings" },
   { label: "Billings", path: "/admin/billings" },
+  { label: "Payments", path: "/admin/payments" },
   { label: "Events", path: "/admin/events" },
   { label: "Announcements", path: "/admin/announcements" },
-  { label: "Readings Entry", path: "/meter-reader/readings-entry" },
-  { label: "Consumer Directory", path: "/meter-reader/consumer-directory" },
+  { label: "Record Consumption Entry", path: "/meter-reader/readings-entry" },
   { label: "Profile Details", path: "/consumer/profile-details" },
   { label: "Billing Ledger", path: "/consumer/billing-ledger" },
   { label: "Usage Metrics", path: "/consumer/usage-metrics" },
   { label: "Analytics", path: "/admin/analytics" },
+  { label: "Reports", path: "/admin/reports" },
 ];
 
 const roleAccess = {
@@ -34,9 +44,11 @@ const roleAccess = {
       "/admin/consumers",
       "/admin/readings",
       "/admin/billings",
+      "/admin/payments",
       "/admin/events",
       "/admin/announcements",
       "/admin/analytics",
+      "/admin/reports",
     ],
   },
   "meter-reader": {
@@ -45,7 +57,6 @@ const roleAccess = {
     paths: [
       "/meter-reader",
       "/meter-reader/readings-entry",
-      "/meter-reader/consumer-directory",
     ],
   },
   consumer: {
@@ -138,11 +149,99 @@ export function AppRoutes() {
       <Route element={<Login />} path="/login" />
       <Route
         element={
+          <RoleRouteGuard requiredRole="meter-reader">
+            <AppLayout><RecordConsumptionPage /></AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/meter-reader/readings-entry"
+      />
+      <Route
+        element={
           <RoleRouteGuard requiredRole="admin">
             <Navigate replace to="/admin/dashboard" />
           </RoleRouteGuard>
         }
         path="/admin"
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <AdminDashboardPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/payments"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <PaymentProcessingPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/announcements"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <AnnouncementManagementPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/events"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <EventManagementPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/billings"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <BillingManagementPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/readings"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <AdminReadingsPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/consumers"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <ConsumerManagementPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/reports"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <Reports />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
       />
       <Route
               path="/admin/analytics"

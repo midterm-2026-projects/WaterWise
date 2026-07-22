@@ -87,7 +87,7 @@ describe("App routing", () => {
     const meterReaderRoute = renderRoute("/meter-reader");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /readings entry/i }),
+      await screen.findByRole("heading", { level: 1, name: /record consumption entry/i }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("notification-trigger")).not.toBeInTheDocument();
     await waitFor(() => {
@@ -107,17 +107,15 @@ describe("App routing", () => {
     });
   });
 
-  it("renders mock portal routes inside the shared layout", async () => {
+  it("renders the admin dashboard inside the shared layout", async () => {
     window.localStorage.setItem(MOCK_ROLE_STORAGE_KEY, "admin");
-    renderRoute("/admin/events");
+    renderRoute("/admin/dashboard");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /events/i }),
+      await screen.findByRole("heading", { level: 1, name: /dashboard/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/mock workspace/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/this canvas is ready for the events page view/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId("admin-dashboard")).toBeInTheDocument();
+    expect(screen.getByText(/water operations overview/i)).toBeInTheDocument();
   });
 
   it("shows a route access error when no mock role is signed in", async () => {
@@ -176,7 +174,7 @@ describe("App routing", () => {
     await user.click(await screen.findByRole("link", { name: /open my portal/i }));
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /readings entry/i }),
+      await screen.findByRole("heading", { level: 1, name: /record consumption entry/i }),
     ).toBeInTheDocument();
     expect(route.getPathname()).toBe("/meter-reader/readings-entry");
   });

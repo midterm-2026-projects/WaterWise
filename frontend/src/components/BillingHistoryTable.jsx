@@ -3,7 +3,11 @@ function getStatusClass(status) {
     return "bg-emerald-50 text-[#16A34A]";
   }
 
-  return "bg-red-50 text-[#DC2626]";
+  if (status === "Partially Paid") {
+    return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+  }
+
+  return "bg-red-50 text-[#DC2626] ring-1 ring-red-200";
 }
 
 export default function BillingHistoryTable({ historyData = [], onSelectReceipt }) {
@@ -16,6 +20,7 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt 
         <thead className="hidden md:table-header-group">
           <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
             <th className="px-4 py-3">Billing Period</th>
+            <th className="px-4 py-3">Consumer</th>
             <th className="px-4 py-3">Reading Date</th>
             <th className="px-4 py-3">Consumption</th>
             <th className="px-4 py-3">Amount Due</th>
@@ -28,7 +33,7 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt 
             <tr className="block rounded-2xl border border-dashed border-slate-200 bg-slate-50 md:table-row">
               <td
                 className="block px-4 py-10 text-center text-sm font-medium text-slate-500 md:table-cell"
-                colSpan={6}
+                colSpan={7}
                 data-testid="billing-history-empty-state"
               >
                 There are no billing records yet.
@@ -46,6 +51,9 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt 
               >
                 <td className="col-span-2 flex items-center justify-between border-b border-slate-100 pb-3 text-base font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Billing_period'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden" data-testid="row-month">
                   {row.billingPeriod}
+                </td>
+                <td className="col-span-2 font-bold text-slate-800 before:mr-2 before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumer'] md:table-cell md:px-4 md:py-4 md:before:hidden">
+                  {row.consumerName ?? row.name ?? "Consumer"}
                 </td>
                 <td
                   className="flex flex-col gap-1 font-mono text-slate-600 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Reading_date'] md:table-cell md:px-4 md:py-4 md:before:hidden"

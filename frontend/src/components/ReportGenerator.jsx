@@ -95,8 +95,9 @@ function ReportGenerator({ onGenerated }) {
     <div
       className="
 bg-white
-rounded-xl
-shadow
+rounded-3xl
+border border-slate-200/80
+shadow-[0_20px_60px_rgba(15,23,42,0.07)]
 p-6
 space-y-6
 "
@@ -220,7 +221,7 @@ bg-blue-600
 text-white
 px-5
 py-2
-rounded-lg
+rounded-xl
 flex
 items-center
 gap-2

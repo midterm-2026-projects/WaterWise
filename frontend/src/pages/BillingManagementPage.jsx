@@ -1,0 +1,125 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CircleDollarSign, RefreshCw, Search, TrendingUp, WalletCards } from "lucide-react";
+import BillingHistoryTable from "../components/BillingHistoryTable";
+import BillingSummaryCard from "../components/BillingSummaryCard";
+import DigitalReceiptModal from "../components/DigitalReceiptModal";
+import PaymentForm from "../components/PaymentForm";
+import { fetchBillingHistory } from "../api/billingAPI";
+import { recordPayment as recordPaymentRequest } from "../api/paymentAPI";
+
+export default function BillingManagementPage() {
+  const [billingHistory, setBillingHistory] = useState([]);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadBillingHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      setBillingHistory(await fetchBillingHistory());
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load billing history.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchBillingHistory()
+      .then((records) => {
+        if (active) {
+          setBillingHistory(records);
+          setError("");
+        }
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load billing history.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleHistory = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return billingHistory.filter((record) => {
+      const matchesQuery = !term || [record.invoiceNumber, record.consumerName, record.billingPeriod, record.status].some((value) => String(value).toLowerCase().includes(term));
+      return matchesQuery && (status === "all" || record.status === status);
+    });
+  }, [billingHistory, query, status]);
+
+  const totalBilled = billingHistory.reduce((sum, record) => sum + Number(record.amountDue || 0), 0);
+  const outstanding = billingHistory.reduce((sum, record) => sum + Number(record.outstandingBalance || 0), 0);
+  const collected = Math.max(totalBilled - outstanding, 0);
+  const collectionRate = totalBilled ? (collected / totalBilled) * 100 : 0;
+
+  const recordPayment = async (payment) => {
+    try {
+      setError("");
+      const billing = billingHistory.find(
+        (record) => record.consumerName.toLowerCase() === payment.consumerName.trim().toLowerCase(),
+      );
+      if (!billing) throw new Error("No billing record matches that consumer name.");
+      await recordPaymentRequest({
+        billingId: billing.id,
+        amount: payment.amountPaid,
+        paymentDate: payment.paymentDate,
+      });
+      await loadBillingHistory();
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to record payment.");
+    }
+  };
+
+  return (
+    <main className="space-y-6">
+      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
+        <span className="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Billing administration</span>
+        <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight">Billing and payment management</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Track bill status, collection progress, account balances, and payment receipts across the community.</p>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><CircleDollarSign className="h-5 w-5 text-sky-300" /><p className="mt-3 text-xl font-extrabold">₱{totalBilled.toLocaleString()}</p><p className="text-xs text-slate-300">Total billed</p></div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><WalletCards className="h-5 w-5 text-rose-300" /><p className="mt-3 text-xl font-extrabold">₱{outstanding.toLocaleString()}</p><p className="text-xs text-slate-300">Outstanding</p></div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><TrendingUp className="h-5 w-5 text-emerald-300" /><p className="mt-3 text-xl font-extrabold">{collectionRate.toFixed(0)}%</p><p className="text-xs text-slate-300">Collected</p></div>
+          </div>
+        </div>
+      </header>
+
+      <BillingSummaryCard billingData={billingHistory} />
+
+      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
+        <div className="border-b border-slate-100 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Account records</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Billing History</h3><p className="mt-1 text-sm text-slate-500">Review consumer billing periods, usage, amounts, and receipts.</p></div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <label className="relative block sm:w-80"><span className="sr-only">Search billing history</span><Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search consumer, invoice, or period" type="search" value={query} /></label>
+              <label><span className="sr-only">Filter billing status</span><select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-100 sm:w-44" onChange={(event) => setStatus(event.target.value)} value={status}><option value="all">All statuses</option><option value="Paid">Paid</option><option value="Partially Paid">Partially Paid</option><option value="Unpaid">Unpaid</option></select></label>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 sm:p-6">
+          {error && <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadBillingHistory} type="button">Try again</button></div>}
+          {loading ? <div className="grid gap-3">{[1, 2, 3].map((item) => <div className="h-16 animate-pulse rounded-xl bg-slate-100" key={item} />)}</div> : <BillingHistoryTable historyData={visibleHistory} onSelectReceipt={setSelectedReceipt} />}
+          <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200" disabled={loading} onClick={loadBillingHistory} type="button"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh billing data</button>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
+        <div className="mb-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Payment update</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Record a consumer payment</h3></div>
+        <PaymentForm billingRecords={billingHistory} onSubmit={recordPayment} />
+      </section>
+
+      <DigitalReceiptModal isOpen={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} receiptData={selectedReceipt} />
+    </main>
+  );
+}

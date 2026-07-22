@@ -1,13 +1,19 @@
 import { useState } from "react";
 
-export default function EventForm() {
+const emptyEvent = {
+  title: "",
+  description: "",
+  date: "",
+  time: "",
+  location: "",
+  tags: "",
+};
+
+export default function EventForm({ initialEvent, onCancel, onSubmit, submitting = false }) {
   const [event, setEvent] = useState({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    location: "",
-    tags: "",
+    ...emptyEvent,
+    ...initialEvent,
+    tags: Array.isArray(initialEvent?.tags) ? initialEvent.tags.join(", ") : initialEvent?.tags ?? "",
   });
 
   const handleChange = (e) => {
@@ -17,25 +23,20 @@ export default function EventForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    alert("Event Saved!");
+    const saved = await onSubmit?.({ ...event });
 
-    setEvent({
-      title: "",
-      description: "",
-      date: "",
-      time: "",
-      location: "",
-      tags: "",
-    });
+    if (!onSubmit) alert("Event Saved!");
+
+    if (saved !== false) setEvent(emptyEvent);
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-6 text-2xl font-bold">
-        Create Event
+    <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
+      <p className="text-xs font-bold uppercase tracking-wider text-violet-600">{initialEvent ? "Update schedule" : "New schedule"}</p><h2 className="mb-6 mt-1 text-2xl font-extrabold">
+        {initialEvent ? "Edit Event" : "Create Event"}
       </h2>
 
       <form
@@ -47,7 +48,7 @@ export default function EventForm() {
           placeholder="Event Title"
           value={event.title}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
 
         <textarea
@@ -55,7 +56,7 @@ export default function EventForm() {
           placeholder="Event Description"
           value={event.description}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
           rows={4}
         />
 
@@ -64,7 +65,7 @@ export default function EventForm() {
           name="date"
           value={event.date}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
 
         <input
@@ -72,7 +73,7 @@ export default function EventForm() {
           name="time"
           value={event.time}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
 
         <input
@@ -80,7 +81,7 @@ export default function EventForm() {
           placeholder="Location"
           value={event.location}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
 
         <input
@@ -88,15 +89,17 @@ export default function EventForm() {
           placeholder="Event Tags"
           value={event.tags}
           onChange={handleChange}
-          className="w-full rounded border p-3"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
 
         <button
           type="submit"
-          className="rounded bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+          className="rounded-xl bg-violet-600 px-6 py-3 font-bold text-white shadow-lg shadow-violet-200 hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={submitting}
         >
-          Save Event
+          {submitting ? "Saving..." : initialEvent ? "Update Event" : "Save Event"}
         </button>
+        {initialEvent && <button className="ml-3 rounded-xl bg-slate-100 px-6 py-3 font-bold text-slate-700 hover:bg-slate-200" onClick={onCancel} type="button">Cancel</button>}
       </form>
     </div>
   );
