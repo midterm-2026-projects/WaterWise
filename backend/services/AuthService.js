@@ -13,16 +13,6 @@ function useTestAccounts() {
   return process.env.NODE_ENV === "test" || process.env.WATERWISE_E2E === "true";
 }
 
-function demoAccountsEnabled() {
-  return process.env.ENABLE_DEMO_ACCOUNTS === "true";
-}
-
-function findMockAccount(identifier) {
-  return mockUsers.find(
-    (user) => user.email === identifier || user.username === identifier,
-  );
-}
-
 function invalidCredentialsError() {
   return new Error("Invalid email or password.");
 }
@@ -61,13 +51,13 @@ export async function loginUser(credentials = {}) {
     throw invalidCredentialsError();
   }
 
-  let account;
-  if (useTestAccounts()) {
-    account = findMockAccount(identifier);
-  } else {
-    account = demoAccountsEnabled() ? findMockAccount(identifier) : null;
-    account ??= await findAccount(identifier);
-  }
+  const account = useTestAccounts()
+    ? mockUsers.find(
+        (user) =>
+          (user.email === identifier || user.username === identifier) &&
+          user.password === password
+      )
+    : await findAccount(identifier);
 
   if (!account || account.password !== password) {
     throw invalidCredentialsError();

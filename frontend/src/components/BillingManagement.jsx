@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -6,13 +6,11 @@ import BillingSummaryCard from "./BillingSummaryCard";
 import BillingHistoryTable from "./BillingHistoryTable";
 import PaymentForm from "./PaymentForm";
 
-import { fetchBillingHistory } from "../api/billingAPI";
-import { recordPayment } from "../api/paymentAPI";
+import { billingRecords } from "../data/billingData";
 
 function BillingManagement() {
-  const [billingHistory, setBillingHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [billingHistory, setBillingHistory] =
+    useState(billingRecords);
 
   const [selectedReceipt, setSelectedReceipt] =
     useState(null);
@@ -21,56 +19,43 @@ function BillingManagement() {
     setSelectedReceipt(receipt);
   };
 
-  const loadBillingHistory = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      setBillingHistory(await fetchBillingHistory());
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load billing history.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handlePaymentSubmit = (payment) => {
+    const updatedHistory = billingHistory.map(
+      (record) => {
+        if (
+          record.consumerName !==
+          payment.consumerName
+        ) {
+          return record;
+        }
 
-  useEffect(() => {
-    let active = true;
-    fetchBillingHistory()
-      .then((records) => {
-        if (active) setBillingHistory(records);
-      })
-      .catch((requestError) => {
-        if (active) setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load billing history.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handlePaymentSubmit = async (payment) => {
-    const billing = billingHistory.find(
-      (record) => record.consumerName.toLowerCase() === payment.consumerName.trim().toLowerCase(),
+        return {
+          ...record,
+          amountDue:
+            payment.remainingBalance,
+          outstandingBalance:
+            payment.remainingBalance,
+          status:
+            payment.paymentStatus,
+        };
+      }
     );
 
-    if (!billing) {
-      setError("No billing record matches that consumer name.");
-      return;
-    }
+    setBillingHistory(updatedHistory);
 
-    try {
-      setError("");
-      await recordPayment({
-        billingId: billing.id,
-        amount: payment.amountPaid,
-        paymentDate: payment.paymentDate,
-      });
-      setSelectedReceipt(null);
-      await loadBillingHistory();
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to record payment.");
+    if (
+      selectedReceipt &&
+      selectedReceipt.consumerName ===
+        payment.consumerName
+    ) {
+      const updatedReceipt =
+        updatedHistory.find(
+          (record) =>
+            record.consumerName ===
+            payment.consumerName
+        );
+
+      setSelectedReceipt(updatedReceipt);
     }
   };
 
@@ -96,25 +81,17 @@ function BillingManagement() {
             billingData={billingHistory}
           />
 
-          {error && (
-            <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4 text-red-700" role="alert">
-              <span>{error}</span>
-              <button className="font-semibold underline" onClick={loadBillingHistory} type="button">Try again</button>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="rounded-lg bg-white p-8 text-center text-slate-500">Loading billing records...</div>
-          ) : (
-            <BillingHistoryTable
-              historyData={billingHistory}
-              onSelectReceipt={handleSelectReceipt}
-            />
-          )}
+          <BillingHistoryTable
+            historyData={billingHistory}
+            onSelectReceipt={
+              handleSelectReceipt
+            }
+          />
 
           <PaymentForm
-            billingRecords={billingHistory}
-            onSubmit={handlePaymentSubmit}
+            onSubmit={
+              handlePaymentSubmit
+            }
           />
 
           {selectedReceipt && (

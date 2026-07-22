@@ -4,15 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import EventRecordsTable from "../../components/EventRecordsTable";
 
-const events = [
-  { id: 1, title: "Barangay Assembly", schedule: "2026-07-10 - 09:00", location: "Barangay Hall", status: "Upcoming", tags: ["Community"] },
-  { id: 2, title: "Water System Maintenance", schedule: "2026-07-15 - 13:00", location: "Purok 3", status: "Scheduled", tags: ["Maintenance"] },
-];
-
 describe("EventRecordsTable", () => {
   it("should render Event Records heading", () => {
     // Arrange
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     // Act
     const heading = screen.getByRole("heading", {
@@ -31,7 +26,7 @@ describe("EventRecordsTable", () => {
     "Event Tags",
     "Actions",
   ])("should render '%s' table header", (header) => {
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     expect(
       screen.getByRole("columnheader", {
@@ -42,7 +37,7 @@ describe("EventRecordsTable", () => {
 
   it("should render the sample events", () => {
     // Arrange
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     // Assert
     expect(
@@ -55,7 +50,7 @@ describe("EventRecordsTable", () => {
   });
 
   it("should display the event status", () => {
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     expect(
       screen.getByText("Upcoming")
@@ -67,7 +62,7 @@ describe("EventRecordsTable", () => {
   });
 
   it("should display the event tags", () => {
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     expect(
       screen.getByText("Community")
@@ -79,7 +74,7 @@ describe("EventRecordsTable", () => {
   });
 
   it("should render Edit buttons", () => {
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     const buttons = screen.getAllByRole("button", {
       name: /edit/i,
@@ -89,7 +84,7 @@ describe("EventRecordsTable", () => {
   });
 
   it("should render Delete buttons", () => {
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     const buttons = screen.getAllByRole("button", {
       name: /delete/i,
@@ -102,7 +97,7 @@ describe("EventRecordsTable", () => {
     // Arrange
     const user = userEvent.setup();
 
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     const button = screen.getAllByRole("button", {
       name: /edit/i,
@@ -119,7 +114,7 @@ describe("EventRecordsTable", () => {
     // Arrange
     const user = userEvent.setup();
 
-    render(<EventRecordsTable events={events} />);
+    render(<EventRecordsTable />);
 
     const button = screen.getAllByRole("button", {
       name: /delete/i,
