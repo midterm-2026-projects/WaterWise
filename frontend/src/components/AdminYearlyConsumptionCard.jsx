@@ -73,7 +73,8 @@ function AdminYearlyConsumptionCard() {
     : "Overall forecast for next year";
 
   return (
-    <div className="group relative h-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md">
+    <div data-testid="yearly-consumption-card"
+    className="group relative h-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md">
       {/* Background Accent */}
       <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-indigo-100/70 blur-2xl" />
 

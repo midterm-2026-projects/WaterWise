@@ -1,25 +1,165 @@
-import { useState } from "react";
-import { FileText } from "lucide-react";
-import GeneratedReportsTable from "../components/GeneratedReportsTable";
+import { useEffect, useState } from "react";
+
+import { FileText, RefreshCw } from "lucide-react";
+
 import ReportGenerator from "../components/ReportGenerator";
 
+import { fetchGeneratedReports } from "../services/reportAPI";
+
 function Reports() {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [reports, setReports] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+
+      setError("");
+
+      const response = await fetchGeneratedReports();
+
+      setReports(response?.data ?? response ?? []);
+    } catch (err) {
+      setError("Failed to load generated reports.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReports();
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <span className="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-300">Document center</span><h1 className="mt-4 flex items-center gap-2 text-3xl font-extrabold tracking-tight">
-          <FileText />
-          Report Generation
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-          Generate, preview, download, print, and manage system reports.
-        </p>
-      </header>
+    <div
+      className="
+p-6
+space-y-6
+"
+    >
+      <div
+        className="
+flex
+justify-between
+items-center
+"
+      >
+        <div>
+          <h1
+            className="
+text-2xl
+font-bold
+flex
+items-center
+gap-2
+"
+          >
+            <FileText />
+            Report Generation
+          </h1>
 
-      <ReportGenerator onGenerated={() => setRefreshKey((key) => key + 1)} />
-      <GeneratedReportsTable refreshKey={refreshKey} />
+          <p
+            className="
+text-gray-500
+"
+          >
+            Generate and manage system reports
+          </p>
+        </div>
+
+        <button
+          onClick={loadReports}
+          className="
+flex
+items-center
+gap-2
+px-4
+py-2
+rounded-lg
+bg-blue-600
+text-white
+"
+        >
+          <RefreshCw size={18} />
+          Refresh
+        </button>
+      </div>
+
+      <ReportGenerator onGenerated={loadReports} />
+
+      <div
+        className="
+bg-white
+rounded-xl
+shadow
+p-5
+"
+      >
+        <h2
+          className="
+font-semibold
+text-lg
+mb-4
+"
+        >
+          Generated Reports
+        </h2>
+
+        {loading && <p>Loading reports...</p>}
+
+        {error && (
+          <p
+            className="
+text-red-500
+"
+          >
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && reports.length === 0 && (
+          <p>No reports generated yet.</p>
+        )}
+
+        {!loading && !error && reports.length > 0 && (
+          <div
+            className="
+space-y-3
+"
+          >
+            {reports.map((report) => (
+              <div
+                key={report.id}
+                className="
+border
+rounded-lg
+p-4
+"
+              >
+                <p
+                  className="
+font-semibold
+"
+                >
+                  {report.title ?? "Generated Report"}
+                </p>
+
+                <p
+                  className="
+text-sm
+text-gray-500
+"
+                >
+                  {report.created_at}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -324,6 +324,7 @@ function PerPurokConsumptionTrend() {
 
   return (
     <section
+    data-testid="purok-consumption-trend"
       className="
 rounded-3xl
 border

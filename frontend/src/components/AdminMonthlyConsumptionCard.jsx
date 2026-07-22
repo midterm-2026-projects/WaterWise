@@ -73,7 +73,8 @@ function AdminMonthlyConsumptionCard() {
     : "Overall forecast for next month";
 
   return (
-    <div className="group relative h-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-md">
+    <div data-testid="monthly-consumption-card"
+    className="group relative h-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-md">
       <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-100/70 blur-2xl" />
 
       <div className="relative flex h-full flex-col">
