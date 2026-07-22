@@ -1,28 +1,47 @@
-import { defineConfig, devices } from '@playwright/test';
-import process from 'node:process';
+import { defineConfig, devices } from "@playwright/test";
+import process from "node:process";
+
+const frontendPort = process.env.E2E_FRONTEND_PORT || "5173";
+const frontendUrl = process.env.BASE_URL || `http://127.0.0.1:${frontendPort}`;
 
 export default defineConfig({
-  testDir: './src/test/e2e',
-  globalSetup: './src/test/e2e/globalSetup.js',
-  globalTeardown: './src/test/e2e/globalTeardown.js',
-  fullyParallel: true,
+
+  testDir: "./src/test/e2e",
+
+  globalSetup: "./src/test/e2e/globalSetup.js",
+
+  globalTeardown: "./src/test/e2e/globalTeardown.js",
+
+  fullyParallel: false,
+
   forbidOnly: !!process.env.CI,
+
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+
+  workers: 1,
+
   reporter: [
-    ['list'],
-    ['html', { open: 'never' }],
+    ["list"],
+    ["html", { open: "never" }],
   ],
+
   use: {
-    baseURL: 'http://127.0.0.1:5174',
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    baseURL: frontendUrl,
+
+    screenshot: "only-on-failure",
+
+    trace: "retain-on-failure",
+
+    video: "retain-on-failure",
   },
+
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+      },
     },
   ],
+
 });

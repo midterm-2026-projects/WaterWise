@@ -4,7 +4,7 @@ export default function AnomalyAlertCard({
   severity = "N/A",
 }) {
   return (
-    <div data-testid="anomaly-alert-card">
+    <div data-testid="anomaly-card">
       <h4>{area}</h4>
       <p>{message}</p>
       <span>Severity: {severity}</span>

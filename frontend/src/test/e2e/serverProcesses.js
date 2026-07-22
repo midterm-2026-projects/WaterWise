@@ -7,7 +7,12 @@ import { fileURLToPath } from "node:url";
 const e2eDirectory = path.dirname(fileURLToPath(import.meta.url));
 const frontendDirectory = path.resolve(e2eDirectory, "../../..");
 const backendDirectory = path.resolve(frontendDirectory, "../backend");
+
 const processFile = path.join(e2eDirectory, ".server-processes.json");
+const frontendUrl =
+  process.env.BASE_URL ||
+  `http://127.0.0.1:${process.env.E2E_FRONTEND_PORT || "5173"}`;
+const frontendPort = new URL(frontendUrl).port || "5173";
 
 const servers = [
   {
@@ -21,6 +26,7 @@ const servers = [
     },
     healthUrl: "http://127.0.0.1:5001/health",
   },
+
   {
     key: "frontendPid",
     cwd: frontendDirectory,
@@ -29,24 +35,27 @@ const servers = [
       "--host",
       "127.0.0.1",
       "--port",
-      "5174",
+      frontendPort,
       "--strictPort",
     ],
-    env: { WATERWISE_API_TARGET: "http://127.0.0.1:5001" },
-    healthUrl: "http://127.0.0.1:5174",
+    env: {
+      WATERWISE_API_TARGET: "http://127.0.0.1:5001",
+    },
+    healthUrl: frontendUrl,
   },
 ];
 
 async function isReachable(url) {
   try {
     const response = await fetch(url);
+
     return response.ok;
   } catch {
     return false;
   }
 }
 
-async function waitForServer(url, child, timeoutMs = 120_000) {
+async function waitForServer(url, child, timeoutMs = 120000) {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
@@ -69,28 +78,35 @@ export async function startServers() {
 
   try {
     for (const server of servers) {
-      if (await isReachable(server.healthUrl)) {
-        processIds[server.key] = null;
-        continue;
-      }
-
       const child = spawn(process.execPath, server.args, {
         cwd: server.cwd,
+
         detached: process.platform !== "win32",
-        env: { ...process.env, ...server.env, BROWSER: "none" },
+
+        env: {
+          ...process.env,
+          ...server.env,
+          BROWSER: "none",
+        },
+
         stdio: process.env.CI ? "inherit" : "ignore",
+
         windowsHide: true,
       });
 
       child.unref();
+
       processIds[server.key] = child.pid;
+
       await waitForServer(server.healthUrl, child);
     }
 
     await writeFile(processFile, JSON.stringify(processIds), "utf8");
   } catch (error) {
     stopProcess(processIds.frontendPid);
+
     stopProcess(processIds.backendPid);
+
     throw error;
   }
 }
@@ -110,7 +126,7 @@ function stopProcess(pid) {
       process.kill(-pid, "SIGTERM");
     }
   } catch {
-    // The server may already have stopped; teardown is intentionally idempotent.
+    // already stopped
   }
 }
 
@@ -124,6 +140,10 @@ export async function stopServers() {
   }
 
   stopProcess(processIds.frontendPid);
+
   stopProcess(processIds.backendPid);
-  await rm(processFile, { force: true });
+
+  await rm(processFile, {
+    force: true,
+  });
 }
